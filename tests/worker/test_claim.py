@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -51,3 +53,24 @@ def test_competing_claim_skips_locked_task(isolated_engine: Engine) -> None:
 
         with Session(isolated_engine) as second, second.begin():
             assert claim_next(second, "worker-two") is None
+
+
+@pytest.mark.integration
+def test_oldest_pending_task_is_claimed_first(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        newer_id = submit_task(
+            session, registry, "math.add", {"left": 3, "right": 4}
+        )
+        older_id = submit_task(
+            session, registry, "math.add", {"left": 1, "right": 2}
+        )
+        older = session.get(Task, older_id)
+        assert older is not None
+        older.created_at = datetime.now(UTC) - timedelta(days=1)
+
+    with Session(isolated_engine) as session, session.begin():
+        claim = claim_next(session, "worker-one")
+
+    assert claim is not None
+    assert claim.id == older_id
+    assert claim.id != newer_id
