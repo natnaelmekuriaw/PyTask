@@ -1,7 +1,6 @@
 import json
 import math
 
-
 MAX_JSON_BYTES = 64 * 1024
 MAX_JSON_DEPTH = 32
 

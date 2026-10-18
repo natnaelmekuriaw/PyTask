@@ -12,7 +12,6 @@ from pytask_service.worker.identity import new_worker_id
 from pytask_service.worker.outcome import TaskOutcome
 from pytask_service.worker.runner import run_in_process
 
-
 TaskExecutor = Callable[[str, ClaimedTask], TaskOutcome]
 
 

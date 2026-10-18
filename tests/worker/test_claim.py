@@ -19,9 +19,7 @@ def test_empty_queue_returns_no_claim(isolated_engine: Engine) -> None:
 @pytest.mark.integration
 def test_claim_marks_task_running(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
-        task_id = submit_task(
-            session, registry, "math.add", {"left": 2, "right": 3}
-        )
+        task_id = submit_task(session, registry, "math.add", {"left": 2, "right": 3})
 
     with Session(isolated_engine) as session, session.begin():
         claim = claim_next(session, "worker-one")
@@ -42,9 +40,7 @@ def test_claim_marks_task_running(isolated_engine: Engine) -> None:
 @pytest.mark.integration
 def test_competing_claim_skips_locked_task(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
-        task_id = submit_task(
-            session, registry, "math.add", {"left": 1, "right": 2}
-        )
+        task_id = submit_task(session, registry, "math.add", {"left": 1, "right": 2})
 
     with Session(isolated_engine) as first, first.begin():
         claim = claim_next(first, "worker-one")
@@ -58,12 +54,8 @@ def test_competing_claim_skips_locked_task(isolated_engine: Engine) -> None:
 @pytest.mark.integration
 def test_oldest_pending_task_is_claimed_first(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
-        newer_id = submit_task(
-            session, registry, "math.add", {"left": 3, "right": 4}
-        )
-        older_id = submit_task(
-            session, registry, "math.add", {"left": 1, "right": 2}
-        )
+        newer_id = submit_task(session, registry, "math.add", {"left": 3, "right": 4})
+        older_id = submit_task(session, registry, "math.add", {"left": 1, "right": 2})
         older = session.get(Task, older_id)
         assert older is not None
         older.created_at = datetime.now(UTC) - timedelta(days=1)

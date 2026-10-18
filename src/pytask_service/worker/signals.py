@@ -7,8 +7,7 @@ from threading import Event
 @contextmanager
 def stop_on_signals(stop_event: Event) -> Iterator[None]:
     previous = {
-        signum: signal.getsignal(signum)
-        for signum in (signal.SIGINT, signal.SIGTERM)
+        signum: signal.getsignal(signum) for signum in (signal.SIGINT, signal.SIGTERM)
     }
 
     def request_stop(signum: int, frame: object) -> None:

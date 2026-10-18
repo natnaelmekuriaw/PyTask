@@ -2,7 +2,6 @@ import os
 
 from pytask_service.registry import TaskRegistry
 
-
 registry = TaskRegistry()
 
 
