@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from pytask_service.db.models import TaskStatus
 from pytask_service.observability.events import log_event
+from pytask_service.observability.context import bind_context
 from pytask_service.registry import load_registry
 from pytask_service.worker.claim import ClaimedTask, claim_next
 from pytask_service.worker.errors import LostClaimError
@@ -62,6 +63,12 @@ class Worker:
         if claim is None:
             return None
 
+        with bind_context(task_id=claim.id, attempt_id=claim.token,
+                          attempt_number=claim.attempt_number, worker_id=claim.worker_id):
+            log_event(logger, "task.claimed")
+            return self._execute(claim)
+
+    def _execute(self, claim: ClaimedTask) -> WorkedTask:
         keeper = LeaseKeeper(
             lambda: self._renew(claim),
             self.policy.heartbeat_seconds,
