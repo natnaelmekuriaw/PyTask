@@ -31,3 +31,26 @@ def test_successful_task_stores_result_and_finish_time(isolated_engine: Engine) 
         assert task.finished_at is not None
         assert task.started_at is not None
         assert task.finished_at >= task.started_at
+
+
+@pytest.mark.integration
+def test_failed_task_stores_error(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        task_id = submit_task(
+            session, registry, "demo.fail", {"message": "expected failure"}
+        )
+
+    with Session(isolated_engine) as session, session.begin():
+        claim = claim_next(session, "worker-one")
+    assert claim is not None
+
+    with Session(isolated_engine) as session, session.begin():
+        finish_task(session, claim, TaskOutcome.failure(RuntimeError("failed")))
+
+    with Session(isolated_engine) as session:
+        task = session.get(Task, task_id)
+        assert task is not None
+        assert task.status == TaskStatus.FAILED.value
+        assert task.result is None
+        assert task.error is not None
+        assert "RuntimeError: failed" in task.error
