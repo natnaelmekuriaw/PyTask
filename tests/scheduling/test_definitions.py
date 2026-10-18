@@ -39,3 +39,14 @@ def test_pausing_twice_preserves_the_recurrence_cursor(isolated_engine: Engine, 
         assert same.paused
         assert same.next_run_at == due
         assert same.updated_at == updated
+
+
+def test_resuming_preserves_the_original_due_time(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_id = schedule_factory(paused=True)
+    with Session(isolated_engine) as session, session.begin():
+        before = get_schedule(session, schedule_id)
+        assert before is not None
+        due = before.next_run_at
+        resumed = set_paused(session, schedule_id, False)
+        assert not resumed.paused
+        assert resumed.next_run_at == due
