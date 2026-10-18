@@ -20,6 +20,7 @@ from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
+from pytask_service.observability.logging import configure_logging
 from pytask_service.observability.window import DEFAULT_WINDOW_SECONDS
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
@@ -74,6 +75,11 @@ def main() -> int:
     scheduler.add_argument("--batch-size", type=int, default=100)
     scheduler.add_argument("--poll-interval", type=float, default=1)
     args = parser.parse_args()
+    try:
+        configure_logging()
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        return 1
 
     if args.command == "stats":
         return show_stats(args.window_seconds)
