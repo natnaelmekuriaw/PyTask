@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Self
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator, ConfigDict
 
 from pytask_service.api.schemas.inputs import TaskInput, timestamp_input
 
 
 class TaskSubmit(TaskInput):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "math.add", "arguments": {"left": 1, "right": 2}, "max_attempts": 3, "timeout_seconds": 30}]})
     name: str = Field(min_length=1, max_length=128, pattern=r"^[a-z][a-z0-9_.-]*$")
     run_at: datetime | None = None
     delay_seconds: float | None = Field(
