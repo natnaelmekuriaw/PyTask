@@ -15,6 +15,9 @@ dependencies = [
     "SQLAlchemy>=2.0,<3",
 ]
 
+[project.scripts]
+pytask-service = "pytask_service.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "mypy>=1.15,<2",
