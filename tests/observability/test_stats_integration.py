@@ -10,12 +10,15 @@ pytestmark = pytest.mark.integration
 
 
 def test_cli_and_database_summary_have_matching_counts(
-    isolated_engine: Engine, monkeypatch: pytest.MonkeyPatch,
+    isolated_engine: Engine,
+    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     database = MonitoringDatabase(isolated_engine)
     database.task(status="failed")
-    monkeypatch.setattr(cli_monitoring, "build_engine", lambda settings: isolated_engine)
+    monkeypatch.setattr(
+        cli_monitoring, "build_engine", lambda settings: isolated_engine
+    )
     monkeypatch.delenv("PYTASK_REGISTRY", raising=False)
     assert cli_monitoring.show_stats(60) == 0
     payload = json.loads(capsys.readouterr().out)

@@ -6,7 +6,9 @@ from tests.observability.database import MonitoringDatabase
 pytestmark = pytest.mark.integration
 
 
-def test_queue_counts_describe_all_retained_task_states(isolated_engine: Engine) -> None:
+def test_queue_counts_describe_all_retained_task_states(
+    isolated_engine: Engine,
+) -> None:
     database = MonitoringDatabase(isolated_engine)
     for status in ("pending", "running", "succeeded", "failed"):
         database.task(status=status)

@@ -6,7 +6,8 @@ from tests.observability.conftest import event_records as event_records
 
 
 def test_validation_logs_the_route_template_without_identifiers(
-    client: TestClient, event_records: list[logging.LogRecord],
+    client: TestClient,
+    event_records: list[logging.LogRecord],
 ) -> None:
     response = client.get("/api/v1/tasks/private-task-value")
     assert response.status_code == 422

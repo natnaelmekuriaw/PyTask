@@ -6,7 +6,8 @@ from tests.observability.test_stats_cli import FakeSession
 
 
 def test_statistics_failures_do_not_expose_database_parameters(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     class Engine:
         disposed = False

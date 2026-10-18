@@ -21,7 +21,9 @@ class MonitoringDatabase:
     def task(self, **overrides: Any) -> UUID:
         identifier = uuid4()
         values = {
-            "id": identifier, "name": "math.add", "arguments": {},
+            "id": identifier,
+            "name": "math.add",
+            "arguments": {},
             "created_at": self.now - timedelta(seconds=60),
             "available_at": self.now - timedelta(seconds=30),
             **overrides,
@@ -33,8 +35,11 @@ class MonitoringDatabase:
     def attempt(self, task_id: UUID, **overrides: Any) -> UUID:
         identifier = uuid4()
         values = {
-            "id": identifier, "task_id": task_id, "number": 1,
-            "worker_id": "test-worker", "status": "succeeded",
+            "id": identifier,
+            "task_id": task_id,
+            "number": 1,
+            "worker_id": "test-worker",
+            "status": "succeeded",
             "started_at": self.now - timedelta(seconds=20),
             "queued_at": self.now - timedelta(seconds=25),
             "finished_at": self.now - timedelta(seconds=10),
@@ -47,9 +52,13 @@ class MonitoringDatabase:
     def schedule(self, **overrides: Any) -> UUID:
         identifier = uuid4()
         values = {
-            "id": identifier, "name": str(identifier), "task_name": "math.add",
-            "arguments": {}, "interval_seconds": 60,
-            "next_run_at": self.now - timedelta(seconds=30), **overrides,
+            "id": identifier,
+            "name": str(identifier),
+            "task_name": "math.add",
+            "arguments": {},
+            "interval_seconds": 60,
+            "next_run_at": self.now - timedelta(seconds=30),
+            **overrides,
         }
         with Session(self.engine) as session, session.begin():
             session.add(Schedule(**values))

@@ -18,7 +18,9 @@ def test_reading_statistics_never_claims_work_or_allows_writes(
     task_id = database.task()
     database.read()
     with Session(isolated_engine) as session:
-        assert session.scalar(select(Task.status).where(Task.id == task_id)) == "pending"
+        assert (
+            session.scalar(select(Task.status).where(Task.id == task_id)) == "pending"
+        )
     with Session(isolated_engine) as session:
         read_snapshot(session)
         with pytest.raises(DBAPIError) as failure:

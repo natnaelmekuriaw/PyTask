@@ -10,7 +10,8 @@ pytestmark = pytest.mark.integration
 
 
 def test_api_reads_the_same_snapshot_as_database_clients(
-    database_client: TestClient, isolated_engine: Engine,
+    database_client: TestClient,
+    isolated_engine: Engine,
 ) -> None:
     database = MonitoringDatabase(isolated_engine)
     database.task()

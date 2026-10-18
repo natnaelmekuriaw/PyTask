@@ -5,7 +5,8 @@ from pytask_service.api.body_limit import MAX_REQUEST_BYTES
 
 def test_body_limit_failures_are_correlated_before_routing(client: TestClient) -> None:
     response = client.post(
-        "/api/v1/tasks", content=b"x" * (MAX_REQUEST_BYTES + 1),
+        "/api/v1/tasks",
+        content=b"x" * (MAX_REQUEST_BYTES + 1),
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 413

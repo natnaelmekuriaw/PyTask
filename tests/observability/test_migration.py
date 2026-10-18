@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -22,21 +23,35 @@ def test_monitoring_upgrade_and_downgrade_preserve_attempt_history(
         Task.metadata.drop_all(connection)
         config.attributes["connection"] = connection
         command.upgrade(config, "20261018_06")
-        connection.execute(Task.__table__.insert().values(
-            id=task_id, name="math.add", arguments={},
-        ))
-        connection.execute(TaskAttempt.__table__.insert().values(
-            id=attempt_id, task_id=task_id, number=1, worker_id="legacy",
-            status="succeeded", started_at="2026-10-18T12:00:00+00:00",
-            finished_at="2026-10-18T12:00:01+00:00",
-        ))
+        connection.execute(
+            Task.__table__.insert().values(
+                id=task_id,
+                name="math.add",
+                arguments={},
+            )
+        )
+        connection.execute(
+            TaskAttempt.__table__.insert().values(
+                id=attempt_id,
+                task_id=task_id,
+                number=1,
+                worker_id="legacy",
+                status="succeeded",
+                started_at=datetime(2026, 10, 18, 12, tzinfo=UTC),
+                finished_at=datetime(2026, 10, 18, 12, 0, 1, tzinfo=UTC),
+            )
+        )
         command.upgrade(config, "head")
         command.check(config)
         row = connection.execute(
-            select(TaskAttempt.id, TaskAttempt.queued_at).where(TaskAttempt.id == attempt_id)
+            select(TaskAttempt.id, TaskAttempt.queued_at).where(
+                TaskAttempt.id == attempt_id
+            )
         ).one()
         assert row.id == attempt_id and row.queued_at is None
-        indexes = {item["name"] for item in inspect(connection).get_indexes("task_attempts")}
+        indexes = {
+            item["name"] for item in inspect(connection).get_indexes("task_attempts")
+        }
         assert {"ix_task_attempts_finished", "ix_task_attempts_started"} <= indexes
         command.downgrade(config, "20261018_06")
         assert "queued_at" not in {

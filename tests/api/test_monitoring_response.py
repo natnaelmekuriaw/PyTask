@@ -6,7 +6,8 @@ from tests.observability.factories import empty_snapshot
 
 
 def test_monitoring_uses_requested_window_and_disables_caching(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch,
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     windows: list[int] = []
 
@@ -24,5 +25,10 @@ def test_monitoring_uses_requested_window_and_disables_caching(
     assert body["attempts"]["execution"]["mean_seconds"] is None
     assert body["window_seconds"] == 60
     assert set(body) == {
-        "observed_at", "window_seconds", "window_start", "queue", "attempts", "schedules",
+        "observed_at",
+        "window_seconds",
+        "window_start",
+        "queue",
+        "attempts",
+        "schedules",
     }

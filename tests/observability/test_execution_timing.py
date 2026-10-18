@@ -15,7 +15,9 @@ def test_execution_summary_uses_only_measured_terminal_attempts(
     end = database.now - timedelta(seconds=10)
     for duration, status in ((2, "succeeded"), (4, "timed_out")):
         database.attempt(
-            database.task(), status=status, finished_at=end,
+            database.task(),
+            status=status,
+            finished_at=end,
             started_at=end - timedelta(seconds=duration),
         )
     database.attempt(database.task(), status="abandoned")

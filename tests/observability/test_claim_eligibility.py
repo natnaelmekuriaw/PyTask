@@ -13,7 +13,8 @@ pytestmark = pytest.mark.integration
 
 @pytest.mark.parametrize("previous_attempts", [0, 1])
 def test_claim_copies_eligibility_before_task_state_changes(
-    isolated_engine: Engine, previous_attempts: int,
+    isolated_engine: Engine,
+    previous_attempts: int,
 ) -> None:
     database = MonitoringDatabase(isolated_engine)
     eligible = database.now - timedelta(seconds=15)

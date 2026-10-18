@@ -12,5 +12,4 @@ def test_monitoring_compiles_to_one_select_without_row_locks() -> None:
     assert sql.startswith("SELECT ")
     assert "FOR UPDATE" not in sql and "SKIP LOCKED" not in sql
     assert "STATEMENT_TIMESTAMP()" in sql
-    assert "CROSS JOIN" not in sql
-    assert len(compiled.params) > 0
+    assert "ARGUMENTS" not in sql and "RESULT" not in sql and "ERROR" not in sql

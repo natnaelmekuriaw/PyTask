@@ -6,7 +6,8 @@ from tests.observability.conftest import event_records as event_records
 
 
 def test_unmatched_paths_and_query_values_are_not_logged(
-    client: TestClient, event_records: list[logging.LogRecord],
+    client: TestClient,
+    event_records: list[logging.LogRecord],
 ) -> None:
     response = client.get("/private-token?password=private-value")
     event = next(record for record in event_records if record.msg == "http.request")

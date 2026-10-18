@@ -14,7 +14,8 @@ def test_unknown_and_reversed_eligibility_times_are_not_samples(
     database = MonitoringDatabase(isolated_engine)
     database.attempt(database.task(), queued_at=None)
     database.attempt(
-        database.task(), queued_at=database.now,
+        database.task(),
+        queued_at=database.now,
         started_at=database.now - timedelta(seconds=1),
     )
     attempts = database.read().attempts

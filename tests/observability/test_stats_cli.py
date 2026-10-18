@@ -19,7 +19,8 @@ class FakeSession:
 
 
 def test_statistics_need_only_database_configuration(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     class Engine:
         disposed = False
@@ -32,7 +33,9 @@ def test_statistics_need_only_database_configuration(
     monkeypatch.delenv("PYTASK_REGISTRY", raising=False)
     monkeypatch.setattr(cli_monitoring, "build_engine", lambda settings: engine)
     monkeypatch.setattr(cli_monitoring, "Session", lambda engine: FakeSession())
-    monkeypatch.setattr(cli_monitoring, "read_snapshot", lambda session, window: empty_snapshot())
+    monkeypatch.setattr(
+        cli_monitoring, "read_snapshot", lambda session, window: empty_snapshot()
+    )
     assert cli_monitoring.show_stats(3600) == 0
     output = capsys.readouterr()
     assert json.loads(output.out)["queue"]["ready"] == 0

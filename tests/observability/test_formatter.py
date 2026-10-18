@@ -7,8 +7,12 @@ from pytask_service.observability.formatter import EventFormatter
 def test_exception_payloads_and_format_arguments_are_not_rendered() -> None:
     error = RuntimeError("password=private")
     record = logging.LogRecord(
-        "pytask_service.test", logging.ERROR, "", 1,
-        "api.database_failed", ("secret SQL parameters",),
+        "pytask_service.test",
+        logging.ERROR,
+        "",
+        1,
+        "api.database_failed",
+        ("secret SQL parameters",),
         (type(error), error, None),
     )
     record.event_fields = {"task_id": "task", "arguments": "private"}

@@ -10,7 +10,8 @@ pytestmark = pytest.mark.integration
 
 
 def test_dispatch_events_reference_the_occurrence_without_arguments(
-    isolated_engine: Engine, event_records: list[logging.LogRecord],
+    isolated_engine: Engine,
+    event_records: list[logging.LogRecord],
 ) -> None:
     database = MonitoringDatabase(isolated_engine)
     schedule_id = database.schedule(arguments={"secret": "payload"})

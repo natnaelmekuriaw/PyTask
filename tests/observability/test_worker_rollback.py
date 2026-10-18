@@ -11,7 +11,8 @@ pytestmark = pytest.mark.integration
 
 
 def test_failed_finalization_does_not_log_a_committed_outcome(
-    isolated_engine: Engine, event_records: list[logging.LogRecord],
+    isolated_engine: Engine,
+    event_records: list[logging.LogRecord],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     MonitoringDatabase(isolated_engine).task()
@@ -23,7 +24,8 @@ def test_failed_finalization_does_not_log_a_committed_outcome(
 
     monkeypatch.setattr(service, "finish_task", fail_after_flush)
     worker = service.Worker(
-        isolated_engine, "pytask_service.example_tasks:registry",
+        isolated_engine,
+        "pytask_service.example_tasks:registry",
         executor=lambda path, claim, cancel: TaskOutcome.success(3),
     )
     with pytest.raises(RuntimeError, match="commit did not happen"):

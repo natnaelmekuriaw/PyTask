@@ -17,6 +17,8 @@ def test_console_handler_follows_stderr_redirection(
     old_stream.close()
     current_stream = io.StringIO()
     monkeypatch.setattr("sys.stderr", current_stream)
-    record = logging.LogRecord("pytask_service", logging.INFO, "", 0, "worker.started", (), None)
+    record = logging.LogRecord(
+        "pytask_service", logging.INFO, "", 0, "worker.started", (), None
+    )
     handler.handle(record)
     assert json.loads(current_stream.getvalue())["event"] == "worker.started"

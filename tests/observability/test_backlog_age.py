@@ -17,7 +17,9 @@ def test_oldest_ready_age_ignores_creation_time_and_exhausted_tasks(
         available_at=database.now - timedelta(seconds=30),
     )
     database.task(
-        available_at=database.now - timedelta(days=1), attempt_count=3, max_attempts=3,
+        available_at=database.now - timedelta(days=1),
+        attempt_count=3,
+        max_attempts=3,
     )
     snapshot = database.read()
     expected = (snapshot.observed_at - database.now).total_seconds() + 30

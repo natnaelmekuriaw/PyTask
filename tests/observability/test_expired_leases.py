@@ -8,7 +8,9 @@ from tests.observability.database import MonitoringDatabase
 pytestmark = pytest.mark.integration
 
 
-def test_only_running_expired_leases_count_as_recoverable(isolated_engine: Engine) -> None:
+def test_only_running_expired_leases_count_as_recoverable(
+    isolated_engine: Engine,
+) -> None:
     database = MonitoringDatabase(isolated_engine)
     past = database.now - timedelta(seconds=5)
     future = database.now + timedelta(hours=1)

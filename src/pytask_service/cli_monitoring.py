@@ -22,7 +22,8 @@ def show_stats(window_seconds: int) -> int:
             engine.dispose()
     except (ValueError, SQLAlchemyError):
         print(
-            "Statistics unavailable; check configuration, database access, and migrations",
+            "Statistics unavailable; check configuration, database access, "
+            "and migrations",
             file=sys.stderr,
         )
         return 1

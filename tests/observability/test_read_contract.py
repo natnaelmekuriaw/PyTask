@@ -1,10 +1,12 @@
-from collections.abc import Iterator
+import pytest
 
 from pytask_service.observability import service
 from pytask_service.observability.window import ObservationWindow
 
 
-def test_read_only_mode_precedes_aggregate_execution(monkeypatch: object) -> None:
+def test_read_only_mode_precedes_aggregate_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls: list[str] = []
     sentinel = object()
 
