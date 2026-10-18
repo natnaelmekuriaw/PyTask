@@ -28,3 +28,14 @@ def test_schedule_listing_has_stable_name_order_and_a_limit(isolated_engine: Eng
     with Session(isolated_engine) as session:
         rows = list_schedules(session, limit=1)
         assert [row.id for row in rows] == [first]
+
+
+def test_pausing_twice_preserves_the_recurrence_cursor(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_id = schedule_factory()
+    with Session(isolated_engine) as session, session.begin():
+        schedule = set_paused(session, schedule_id, True)
+        due, updated = schedule.next_run_at, schedule.updated_at
+        same = set_paused(session, schedule_id, True)
+        assert same.paused
+        assert same.next_run_at == due
+        assert same.updated_at == updated
