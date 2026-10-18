@@ -21,3 +21,12 @@ def test_task_pages_handle_equal_creation_timestamps(database_client: TestClient
     second = database_client.get("/api/v1/tasks", params={"limit": 2, "cursor": first["next_cursor"]}).json()
     assert [item["id"] for item in first["items"] + second["items"]] == sorted(ids, reverse=True)
     assert second["next_cursor"] is None
+
+
+def test_newer_insertions_do_not_repeat_or_shift_older_pages(database_client: TestClient, submit: Callable[..., dict[str, Any]]) -> None:
+    original = {submit()["id"] for _ in range(3)}
+    first = database_client.get("/api/v1/tasks", params={"limit": 1}).json()
+    newest = submit()["id"]
+    remaining = database_client.get("/api/v1/tasks", params={"limit": 100, "cursor": first["next_cursor"]}).json()
+    seen = [item["id"] for item in first["items"] + remaining["items"]]
+    assert set(seen) == original and len(seen) == 3 and newest not in seen
