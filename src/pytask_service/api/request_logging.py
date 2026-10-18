@@ -11,8 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class RequestLoggingMiddleware:
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(
+        self, app: ASGIApp, route_templates: dict[int, str] | None = None
+    ) -> None:
         self.app = app
+        self.route_templates = route_templates or {}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -51,7 +54,10 @@ class RequestLoggingMiddleware:
                     status = 500
                 raise
             finally:
-                route = getattr(scope.get("route"), "path", "unmatched")
+                selected = scope.get("route")
+                route = self.route_templates.get(
+                    id(selected), getattr(selected, "path", "unmatched")
+                )
                 method = scope.get("method", "OTHER")
                 if method not in {
                     "GET",

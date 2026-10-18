@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
+from fastapi.routing import iter_route_contexts
 from sqlalchemy.engine import Engine
 
 from pytask_service.api.body_limit import BodyLimitMiddleware
@@ -43,7 +44,6 @@ def create_app(
     app = FastAPI(title="PyTask API", version="1.0.0", lifespan=lifespan)
     register_errors(app)
     app.add_middleware(BodyLimitMiddleware)
-    app.add_middleware(RequestLoggingMiddleware)
     versioned = APIRouter(
         prefix="/api/v1",
         responses={
@@ -62,4 +62,10 @@ def create_app(
     versioned.include_router(monitoring.router)
     app.include_router(versioned)
     app.include_router(health.router)
+    templates = {
+        id(context.original_route): context.path
+        for context in iter_route_contexts(app.routes)
+        if context.path is not None
+    }
+    app.add_middleware(RequestLoggingMiddleware, route_templates=templates)
     return app
