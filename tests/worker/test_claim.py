@@ -29,3 +29,19 @@ def test_claim_marks_task_running(isolated_engine: Engine) -> None:
         assert task.status == TaskStatus.RUNNING.value
         assert task.worker_id == "worker-one"
         assert task.started_at is not None
+
+
+@pytest.mark.integration
+def test_competing_claim_skips_locked_task(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        task_id = submit_task(
+            session, registry, "math.add", {"left": 1, "right": 2}
+        )
+
+    with Session(isolated_engine) as first, first.begin():
+        claim = claim_next(first, "worker-one")
+        assert claim is not None
+        assert claim.id == task_id
+
+        with Session(isolated_engine) as second, second.begin():
+            assert claim_next(second, "worker-two") is None
