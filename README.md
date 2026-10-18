@@ -21,7 +21,7 @@ The commands below use PowerShell. From the repository root:
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[dev]"
 docker compose up -d postgres
-$env:PYTASK_DATABASE_URL = "postgresql+psycopg://pytask:pytask@localhost:5432/pytask"
+$env:PYTASK_DATABASE_URL = "postgresql+psycopg://pytask:pytask@localhost:5433/pytask"
 .\.venv\Scripts\alembic upgrade head
 .\.venv\Scripts\pytask-service check-db
 ```
