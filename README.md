@@ -22,11 +22,12 @@ python -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[dev]"
 docker compose up -d postgres
 $env:PYTASK_DATABASE_URL = "postgresql+psycopg://pytask:pytask@localhost:15432/pytask"
-.\.venv\Scripts\alembic upgrade head
 .\.venv\Scripts\pytask-service check-db
+.\.venv\Scripts\alembic upgrade head
 ```
 
-`check-db` prints `Database connection OK` when it can connect. The credentials
+`check-db` prints `Database connection OK` when it can connect. Run it before
+migrations to catch connection problems early. The credentials
 in `compose.yaml` are for local development only. For another PostgreSQL
 instance, set `PYTASK_DATABASE_URL` to its connection URL using the
 `postgresql+psycopg` driver.
