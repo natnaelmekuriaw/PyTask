@@ -14,6 +14,8 @@ from pytask_service.scheduling.dispatch import dispatch_due
 from pytask_service.tasks import list_attempts
 from pytask_service.worker.outcome import TaskOutcome
 from pytask_service.worker.service import Worker
+from pytask_service.worker.claim import claim_next
+from pytask_service.worker.recovery import recover_expired
 
 pytestmark = pytest.mark.integration
 
@@ -50,3 +52,25 @@ def test_retries_keep_one_task_for_the_scheduled_occurrence(isolated_engine: Eng
         assert task is not None and task.scheduled_for == occurrence.scheduled_for
         assert session.scalar(select(func.count()).select_from(Task)) == 1
         assert [attempt.status for attempt in list_attempts(session, task.id)] == ["failed", "succeeded"]
+
+
+def test_recovery_reuses_the_same_scheduled_task(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_factory(policy=TaskPolicy(2, 10, 0.01, 0.01))
+    with Session(isolated_engine) as session, session.begin():
+        occurrence = dispatch_due(session)[0]
+        assert claim_next(session, "lost-worker") is not None
+        task = session.get(Task, occurrence.id)
+        assert task is not None
+        task.lease_expires_at = database_now(session) - timedelta(seconds=1)
+    with Session(isolated_engine) as session, session.begin():
+        assert recover_expired(session) == 1
+        task = session.get(Task, occurrence.id)
+        assert task is not None
+        task.available_at = database_now(session) - timedelta(seconds=1)
+    worker = Worker(isolated_engine, "pytask_service.example_tasks:registry", executor=lambda path, claim, cancel: TaskOutcome.success(3))
+    assert worker.run_once() is not None
+    with Session(isolated_engine) as session:
+        task = session.get(Task, occurrence.id)
+        assert task is not None and task.scheduled_for == occurrence.scheduled_for
+        assert task.attempt_count == 2
+        assert [attempt.status for attempt in list_attempts(session, task.id)] == ["abandoned", "succeeded"]
