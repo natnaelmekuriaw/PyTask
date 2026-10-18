@@ -112,6 +112,9 @@ The `status` command shows the current state, worker ID, result or error, and
 execution duration. Successful results must be JSON values no larger than
 64 KiB. A handler exception marks the task as failed.
 
+See [Worker design](docs/worker-design.md) for claim, process, and finalization
+details.
+
 ## Planned milestones
 
 1. Register and submit named tasks with JSON arguments. **Implemented.**
