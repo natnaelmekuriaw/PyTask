@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from pytask_service.db.clock import database_now
 from pytask_service.db.models import Task
 from pytask_service.policy import TaskPolicy
+from pytask_service.scheduling.definitions import set_paused
 from pytask_service.scheduling.dispatch import dispatch_due
 from pytask_service.tasks import list_attempts
 from pytask_service.worker.claim import claim_next
@@ -97,3 +98,16 @@ def test_recovery_reuses_the_same_scheduled_task(
             "abandoned",
             "succeeded",
         ]
+
+
+def test_pausing_does_not_cancel_an_already_queued_occurrence(
+    isolated_engine: Engine, schedule_factory: Callable[..., UUID]
+) -> None:
+    schedule_id = schedule_factory()
+    with Session(isolated_engine) as session, session.begin():
+        occurrence = dispatch_due(session)[0]
+        set_paused(session, schedule_id, True)
+    with Session(isolated_engine) as session, session.begin():
+        assert dispatch_due(session) == []
+        claim = claim_next(session, "after-pause")
+        assert claim is not None and claim.id == occurrence.id
