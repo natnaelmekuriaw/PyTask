@@ -51,6 +51,23 @@ exercise timestamp parsing and process behavior without a database. See the
 [scheduling design](docs/scheduling.md) and [upgrade guide](docs/scheduling-upgrade.md)
 when changing dispatch or its schema.
 
+API changes should preserve the [HTTP contract](docs/api-contract.md).
+Validate request shape before issuing queries, construct write responses
+inside their transaction, and commit before returning success. Cover failed
+commits, conflicting schedule names, and missing resources when changing
+write handlers. Error responses should exclude raw input, SQL, and internal
+exception details.
+
+Pagination tests need tied timestamps, filter changes, and newer concurrent
+insertions. Keep cursor filters consistent with the database query. Use the
+shared PostgreSQL fixture for constraints and concurrency coverage; the
+offline HTTP client rejects database access during validation checks.
+
+Use `TestClient` as a context manager so application lifespan setup and cleanup
+run. Test dependencies include the supported HTTPX2 backend. Keep database
+tests marked `integration` and leave server startup to the developer running
+the [API examples](docs/api-examples.md).
+
 Use `feat/short-name` for feature branches and `fix/short-name` for fixes.
 Keep commits focused and describe the change in a short subject line.
 

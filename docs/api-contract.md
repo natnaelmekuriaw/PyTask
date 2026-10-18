@@ -28,8 +28,9 @@ the machine-readable schema. IDs are UUIDs. Missing tasks or schedules return
 ## Input validation
 
 Write bodies use `application/json` or an `application/*+json` media type.
-Pause and resume accept empty bodies without a Content-Type header. Total
-request bodies are limited to 128 KiB, including streamed bodies without a
+Pause and resume accept empty bodies without a Content-Type header and reject
+fields in an optional JSON body. Total request bodies are limited to 128 KiB,
+including streamed bodies without a
 Content-Length. Task arguments retain the engine's 64 KiB normalized JSON
 limit and nesting limit. Unknown fields are rejected.
 

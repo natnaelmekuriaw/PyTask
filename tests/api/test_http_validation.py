@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -79,3 +81,35 @@ def test_nonfinite_invalid_input_still_produces_valid_error_json(
     )
     assert response.status_code == 422
     assert "input" not in response.json()["error"]["details"][0]
+
+
+def test_deep_arguments_are_rejected_before_database_access(client: TestClient) -> None:
+    body = (
+        b'{"name":"math.add","arguments":{"nested":'
+        + b"[" * 40
+        + b"0"
+        + b"]" * 40
+        + b"}}"
+    )
+    response = client.post(
+        "/api/v1/tasks", content=body, headers={"content-type": "application/json"}
+    )
+    assert response.status_code == 422
+    error = response.json()["error"]
+    assert error["code"] == "invalid_request"
+    assert "nested too deeply" in error["details"][0]["message"]
+
+
+@pytest.mark.parametrize("action", ["pause", "resume"])
+@pytest.mark.parametrize(
+    "body,status", [(b'{"cancel_pending":true}', 422), (b"{", 400)]
+)
+def test_schedule_controls_validate_bodies_before_changing_state(
+    client: TestClient, action: str, body: bytes, status: int
+) -> None:
+    response = client.post(
+        f"/api/v1/schedules/{uuid4()}/{action}",
+        content=body,
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == status

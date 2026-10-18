@@ -76,3 +76,16 @@ available to workers. If handler side effects correspond to a business
 period, include that period's identifier in the arguments and use it for
 idempotency. See [scheduling design](scheduling.md) for missed-run and overlap
 behavior.
+
+## HTTP submission
+
+A 201 response from the API acknowledges a committed queue record. It does
+not acknowledge handler completion; inspect the task and its attempts for
+that outcome. A client timeout does not cancel stored work. Retrying a POST
+after a lost response can submit another task, so clients and handlers should
+use stable business identifiers for operations that must tolerate duplicates.
+
+The API commits writes before returning success and uses the same submission
+and schedule services as the CLI. A connection failure around commit can
+still leave a client uncertain about the result. See the
+[API contract](api-contract.md) for HTTP delivery and error semantics.
