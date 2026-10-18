@@ -32,6 +32,8 @@ class TaskStatus(StrEnum):
 class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
+        UniqueConstraint("schedule_id", "scheduled_for", name="uq_tasks_schedule_occurrence"),
+        CheckConstraint("(schedule_id IS NULL) = (scheduled_for IS NULL)", name="ck_tasks_schedule_origin"),
         CheckConstraint(
             "max_attempts BETWEEN 1 AND 1000", name="ck_tasks_max_attempts"
         ),
@@ -84,6 +86,8 @@ class Task(Base):
     )
     claim_token: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True))
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    schedule_id: Mapped[UUID | None] = mapped_column(ForeignKey("schedules.id", name="fk_tasks_schedule_id", ondelete="RESTRICT"))
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 Index("ix_tasks_ready", Task.status, Task.available_at, Task.created_at, Task.id)
