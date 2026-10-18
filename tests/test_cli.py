@@ -81,3 +81,14 @@ def test_submit_reads_arguments_from_a_file(
 
     assert cli.main() == 1
     assert "--args must contain valid JSON" in capsys.readouterr().err
+
+
+def test_worker_requires_a_registry(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("PYTASK_DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
+    monkeypatch.delenv("PYTASK_REGISTRY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["pytask-service", "worker", "--once"])
+
+    assert cli.main() == 1
+    assert "PYTASK_REGISTRY is required" in capsys.readouterr().err

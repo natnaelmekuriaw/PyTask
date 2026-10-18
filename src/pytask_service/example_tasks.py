@@ -11,5 +11,10 @@ def greet(name: str) -> str:
     return f"Hello, {name}"
 
 
+def fail(message: str) -> None:
+    raise RuntimeError(message)
+
+
 registry.register("math.add", add)
 registry.register("demo.greet", greet)
+registry.register("demo.fail", fail)

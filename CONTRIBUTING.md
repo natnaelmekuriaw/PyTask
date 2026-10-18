@@ -17,7 +17,14 @@ type checking, and tests before opening a pull request:
 
 Tests that need PostgreSQL run when `PYTASK_DATABASE_URL` is set. Use the local
 Compose database or a disposable test database; integration tests may change
-its contents as the project grows.
+its contents as the project grows. Run `alembic upgrade head` first. Worker
+integration tests create and remove their own PostgreSQL schemas; the database
+user needs permission to create schemas.
+
+Worker changes should cover both a single worker and competing claims where
+concurrency matters. Keep the claim transaction short and run task handlers
+outside it. Check child-process behavior on Windows as well as Linux when
+changing process execution or shutdown.
 
 Use `feat/short-name` for feature branches and `fix/short-name` for fixes.
 Keep commits focused and describe the change in a short subject line.
