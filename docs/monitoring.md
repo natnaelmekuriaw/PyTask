@@ -40,3 +40,35 @@ many intervals were missed. An empty backlog has a null age.
 For supported task states, pending work partitions into `ready + delayed +
 retry_wait + exhausted_pending`. A snapshot does not repair anomalous rows.
 It does not count live worker processes or scheduler instances.
+
+## Observation windows and timings
+
+The default window is 3,600 seconds. Supported windows range from 60 seconds
+through 604,800 seconds (seven days). `observed_at` comes from PostgreSQL's
+statement clock; `window_start` is exactly one window earlier. Both ends of
+the window are inclusive. Future observations are excluded.
+
+Attempt outcome counts use `finished_at`. A failed attempt counts even if its
+task later succeeds. `retries_started` counts attempts numbered above one
+whose `started_at` falls in the window, including attempts still running.
+An abandoned attempt is observed when recovery records its finish, which can
+be later than the worker's actual death.
+
+Execution timings use `finished_at - started_at` for succeeded, failed, and
+timed-out attempts completed in the window. This measures the attempt
+lifecycle, including process startup and cleanup. It is not a profiler of
+the Python handler. Abandoned attempts and reversed intervals are excluded.
+
+Queue wait uses `started_at - queued_at` for attempts started in the window.
+`queued_at` captures that attempt's eligibility at claim time. Intentional
+delay and retry backoff before eligibility are excluded. Schedule dispatch
+lag after an occurrence becomes eligible is included. Retries get their own
+sample. Unknown historical timestamps and reversed intervals are excluded.
+
+Both summaries report `samples`, `min_seconds`, `mean_seconds`, and
+`max_seconds`. With no valid samples, all three measurements are null.
+The per-attempt API and CLI expose `queued_at` and `queue_wait_seconds` too.
+
+These counts describe retained database history. They can decrease after
+retention or as a window advances; they are not monotonic metrics counters.
+No throughput or percentile claims are inferred from them.
