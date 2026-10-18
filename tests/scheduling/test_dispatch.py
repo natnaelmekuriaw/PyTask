@@ -37,3 +37,16 @@ def test_future_and_paused_schedules_do_not_dispatch(isolated_engine: Engine, sc
     with Session(isolated_engine) as session, session.begin():
         assert dispatch_due(session) == []
         assert session.scalar(select(func.count()).select_from(Task)) == 0
+
+
+def test_downtime_enqueues_only_the_latest_due_occurrence(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    with Session(isolated_engine) as session:
+        start = database_now(session) - timedelta(days=30, seconds=10)
+    schedule_id = schedule_factory(start_at=start, interval_seconds=3600)
+    with Session(isolated_engine) as session, session.begin():
+        tasks = dispatch_due(session)
+        assert len(tasks) == 1
+        occurrence = tasks[0].scheduled_for
+        assert occurrence == start + timedelta(days=30)
+        schedule = get_schedule(session, schedule_id)
+        assert schedule is not None and schedule.next_run_at > database_now(session)
