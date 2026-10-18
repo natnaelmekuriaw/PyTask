@@ -36,3 +36,20 @@ class AttemptRead(APIModel):
     finished_at: datetime | None
     duration_seconds: float | None
     error: str | None
+
+
+class ScheduleRead(APIModel):
+    id: UUID
+    name: str
+    task_name: str
+    arguments: dict[str, object]
+    interval_seconds: int
+    next_run_at: datetime
+    paused: bool
+    created_at: datetime
+    updated_at: datetime
+    last_scheduled_for: datetime | None
+    max_attempts: int
+    timeout_seconds: float
+    retry_base_seconds: float
+    retry_max_seconds: float
