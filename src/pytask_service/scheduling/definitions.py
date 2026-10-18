@@ -15,6 +15,10 @@ from pytask_service.scheduling.time import as_utc
 from pytask_service.tasks import validate_task_arguments
 
 
+class ScheduleNotFound(ValueError):
+    pass
+
+
 def validate_schedule_name(name: str) -> str:
     if not re.fullmatch(r"[a-z][a-z0-9_.-]{0,127}", name):
         raise ValueError(
@@ -83,7 +87,7 @@ def set_paused(session: Session, schedule_id: UUID, paused: bool) -> Schedule:
         .execution_options(populate_existing=True)
     )
     if schedule is None:
-        raise ValueError(f"Schedule not found: {schedule_id}")
+        raise ScheduleNotFound(f"Schedule not found: {schedule_id}")
     if schedule.paused != paused:
         schedule.paused = paused
         schedule.updated_at = database_now(session)
