@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import DateTime, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -39,3 +39,6 @@ class Task(Base):
     worker_id: Mapped[str | None] = mapped_column(String(128))
     result: Mapped[object | None] = mapped_column(JSONB)
     error: Mapped[str | None] = mapped_column(Text)
+
+
+Index("ix_tasks_status_created_id", Task.status, Task.created_at, Task.id)
