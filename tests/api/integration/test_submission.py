@@ -33,3 +33,11 @@ def test_domain_submission_errors_leave_the_queue_unchanged(database_client: Tes
     assert response.status_code == 422 and response.json()["error"]["code"] == code
     with Session(isolated_engine) as session:
         assert session.scalar(select(func.count()).select_from(Task)) == 0
+
+
+def test_explicit_http_execution_policy_is_stored(submit: Callable[..., dict[str, Any]], isolated_engine: Engine) -> None:
+    created = submit(max_attempts=7, timeout_seconds=12, retry_base_seconds=2, retry_max_seconds=20)
+    with Session(isolated_engine) as session:
+        task = session.get(Task, UUID(created["id"]))
+        assert task is not None
+        assert (task.max_attempts, task.timeout_seconds, task.retry_base_seconds, task.retry_max_seconds) == (7, 12, 2, 20)
