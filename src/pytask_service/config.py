@@ -8,6 +8,7 @@ from sqlalchemy.exc import ArgumentError
 @dataclass(frozen=True, slots=True)
 class Settings:
     database_url: str
+    registry_path: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -25,4 +26,5 @@ class Settings:
                 "PYTASK_DATABASE_URL must use postgresql+psycopg and name a database"
             )
 
-        return cls(database_url=database_url)
+        registry_path = os.environ.get("PYTASK_REGISTRY", "").strip() or None
+        return cls(database_url=database_url, registry_path=registry_path)

@@ -3,14 +3,14 @@ from logging.config import fileConfig
 from alembic import context
 
 from pytask_service.config import Settings
-from pytask_service.db.base import Base
 from pytask_service.db.engine import build_engine
+from pytask_service.db.models import Task
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = Task.metadata
 
 
 def run_migrations_offline() -> None:

@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -37,3 +38,46 @@ def test_check_db_reports_missing_configuration(
 
     assert cli.main() == 1
     assert "PYTASK_DATABASE_URL is required" in capsys.readouterr().err
+
+
+def test_submit_requires_a_registry(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("PYTASK_DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
+    monkeypatch.delenv("PYTASK_REGISTRY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["pytask-service", "submit", "math.add"])
+
+    assert cli.main() == 1
+    assert "PYTASK_REGISTRY is required" in capsys.readouterr().err
+
+
+def test_submit_rejects_malformed_json(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("PYTASK_DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
+    monkeypatch.setenv("PYTASK_REGISTRY", "pytask_service.example_tasks:registry")
+    monkeypatch.setattr(
+        sys, "argv", ["pytask-service", "submit", "math.add", "--args", "{"]
+    )
+
+    assert cli.main() == 1
+    assert "--args must contain valid JSON" in capsys.readouterr().err
+
+
+def test_submit_reads_arguments_from_a_file(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    argument_file = tmp_path / "arguments.json"
+    argument_file.write_text("{", encoding="utf-8")
+    monkeypatch.setenv("PYTASK_DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
+    monkeypatch.setenv("PYTASK_REGISTRY", "pytask_service.example_tasks:registry")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["pytask-service", "submit", "math.add", "--args-file", str(argument_file)],
+    )
+
+    assert cli.main() == 1
+    assert "--args must contain valid JSON" in capsys.readouterr().err
