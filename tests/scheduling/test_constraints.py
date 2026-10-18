@@ -20,3 +20,11 @@ def test_database_rejects_duplicate_occurrence_identity(isolated_engine: Engine,
         with Session(isolated_engine) as session, session.begin():
             session.add(Task(name="math.add", arguments={}, schedule_id=occurrence.schedule_id, scheduled_for=occurrence.scheduled_for))
             session.flush()
+
+
+def test_database_rejects_partial_schedule_origin(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_id = schedule_factory()
+    with pytest.raises(IntegrityError):
+        with Session(isolated_engine) as session, session.begin():
+            session.add(Task(name="math.add", arguments={}, schedule_id=schedule_id))
+            session.flush()
