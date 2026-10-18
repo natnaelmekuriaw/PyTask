@@ -47,11 +47,11 @@ Run the checks with:
 The PostgreSQL integration tests run when `PYTASK_DATABASE_URL` is set and skip
 otherwise. Run `alembic upgrade head` before the full test suite.
 
-For an existing checkout, stop workers and schedulers before migrating.
-Follow the [scheduling upgrade guide](docs/scheduling-upgrade.md) for the
-current migration checks. When upgrading from the worker-engine stage, also
-read the [reliability upgrade guide](docs/reliability-upgrade.md) for its
-backfill behavior and retry/timeout examples.
+For an existing checkout, stop API processes, workers, and schedulers before
+migrating. Follow the [API upgrade guide](docs/api-upgrade.md) for dependency
+updates and current migration checks. Earlier changes are described in the
+[scheduling upgrade guide](docs/scheduling-upgrade.md) and the
+[reliability upgrade guide](docs/reliability-upgrade.md).
 
 ## Submit a task
 
