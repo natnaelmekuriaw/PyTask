@@ -5,12 +5,15 @@ from sqlalchemy.orm import Session
 
 from pytask_service.arguments import InvalidTaskArguments, normalize_arguments
 from pytask_service.db.models import Task, TaskStatus
+from pytask_service.policy import TaskPolicy
 from pytask_service.registry import TaskRegistry
 
 
 def submit_task(
-    session: Session, registry: TaskRegistry, name: str, arguments: object
+    session: Session, registry: TaskRegistry, name: str, arguments: object,
+    *, policy: TaskPolicy | None = None,
 ) -> UUID:
+    policy = policy or TaskPolicy()
     handler = registry.get(name)
     normalized = normalize_arguments(arguments)
     try:
@@ -19,7 +22,10 @@ def submit_task(
         raise InvalidTaskArguments(str(exc)) from exc
 
     task = Task(
-        id=uuid4(), name=name, arguments=normalized, status=TaskStatus.PENDING.value
+        id=uuid4(), name=name, arguments=normalized, status=TaskStatus.PENDING.value,
+        attempt_count=0, max_attempts=policy.max_attempts,
+        timeout_seconds=policy.timeout_seconds, retry_base_seconds=policy.retry_base_seconds,
+        retry_max_seconds=policy.retry_max_seconds,
     )
     session.add(task)
     session.flush()
