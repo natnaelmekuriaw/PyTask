@@ -1,9 +1,11 @@
 from datetime import datetime
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
+from typing import Self
 
 from pytask_service.api.schemas.inputs import TaskInput, timestamp_input
 from pytask_service.scheduling.definitions import validate_schedule_name
+from pytask_service.scheduling.interval import next_occurrence
 
 
 class ScheduleCreate(TaskInput):
@@ -22,3 +24,9 @@ class ScheduleCreate(TaskInput):
     @classmethod
     def normalize_time(cls, value: object) -> datetime | None:
         return None if value is None else timestamp_input(value)
+
+    @model_validator(mode="after")
+    def validate_cursor_range(self) -> Self:
+        if self.start_at is not None:
+            next_occurrence(self.start_at, self.interval_seconds)
+        return self
