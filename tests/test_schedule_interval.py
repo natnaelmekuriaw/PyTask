@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from pytask_service.scheduling.interval import due_occurrence, validate_interval
+from pytask_service.scheduling.interval import due_occurrence, next_occurrence, validate_interval
 
 START = datetime(2026, 10, 18, 12, tzinfo=UTC)
 
@@ -29,3 +29,15 @@ def test_missed_occurrences_collapse_to_the_latest_due_instant() -> None:
 def test_tick_latency_does_not_shift_the_schedule_cadence() -> None:
     now = START + timedelta(seconds=125, microseconds=999)
     assert due_occurrence(START, now, 60) == START + timedelta(seconds=120)
+
+
+def test_advancing_the_cursor_moves_past_the_selected_occurrence() -> None:
+    now = START + timedelta(seconds=125)
+    occurrence = due_occurrence(START, now, 60)
+    assert occurrence is not None
+    assert next_occurrence(occurrence, 60) == START + timedelta(seconds=180)
+
+
+def test_cursor_overflow_has_an_actionable_error() -> None:
+    with pytest.raises(ValueError, match="timestamp range"):
+        next_occurrence(datetime.max.replace(tzinfo=UTC), 1)
