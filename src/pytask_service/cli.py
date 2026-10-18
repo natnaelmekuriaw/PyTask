@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime
 from uuid import UUID
@@ -21,6 +22,7 @@ from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
 from pytask_service.observability.logging import configure_logging
+from pytask_service.observability.events import log_event
 from pytask_service.observability.window import DEFAULT_WINDOW_SECONDS
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
@@ -31,6 +33,8 @@ from pytask_service.scheduling.time import parse_timestamp
 from pytask_service.tasks import get_task, list_attempts, submit_task
 from pytask_service.worker.command import run_forever, run_one
 from pytask_service.worker.policy import WorkerPolicy
+
+logger = logging.getLogger(__name__)
 
 
 def main() -> int:
@@ -176,6 +180,7 @@ def _submit(
         print(f"Task submission failed: {exc}", file=sys.stderr)
         return 1
 
+    log_event(logger, "task.submitted", task_id=task_id)
     print(json.dumps({"id": str(task_id), "status": TaskStatus.PENDING.value}))
     return 0
 
