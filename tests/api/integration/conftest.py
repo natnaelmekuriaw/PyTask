@@ -1,5 +1,6 @@
 from collections.abc import Callable, Iterator
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,6 +23,15 @@ def database_client(isolated_engine: Engine) -> Iterator[TestClient]:
 def submit(database_client: TestClient) -> Callable[..., dict[str, Any]]:
     def create(**overrides: object) -> dict[str, Any]:
         response = database_client.post("/api/v1/tasks", json={"name": "math.add", "arguments": {"left": 1, "right": 2}, **overrides})
+        assert response.status_code == 201, response.text
+        return response.json()
+    return create
+
+
+@pytest.fixture
+def schedule(database_client: TestClient) -> Callable[..., dict[str, Any]]:
+    def create(**overrides: object) -> dict[str, Any]:
+        response = database_client.post("/api/v1/schedules", json={"name": f"report-{uuid4().hex}", "task_name": "math.add", "arguments": {"left": 1, "right": 2}, "interval_seconds": 60, **overrides})
         assert response.status_code == 201, response.text
         return response.json()
     return create
