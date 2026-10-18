@@ -17,6 +17,8 @@ from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.scheduling.time import parse_timestamp
 from pytask_service.scheduling.delay import validate_delay
+from pytask_service.scheduling.command import run_scheduler
+from pytask_service.scheduling.policy import SchedulerPolicy
 from pytask_service.tasks import get_task, list_attempts, submit_task
 from pytask_service.worker.command import run_forever, run_one
 from pytask_service.worker.policy import WorkerPolicy
@@ -49,10 +51,21 @@ def main() -> int:
     worker.add_argument(
         "--heartbeat-seconds", type=float, default=10, help="Lease renewal interval"
     )
+    scheduler = commands.add_parser("scheduler", help="Enqueue due recurring tasks")
+    scheduler.add_argument("--once", action="store_true", help="Dispatch at most one batch")
+    scheduler.add_argument("--batch-size", type=int, default=100)
+    scheduler.add_argument("--poll-interval", type=float, default=1)
     args = parser.parse_args()
 
     if args.command == "schedule":
         return handle_schedule(args)
+    if args.command == "scheduler":
+        try:
+            policy = SchedulerPolicy(args.batch_size, args.poll_interval)
+            return run_scheduler(Settings.from_env(), once=args.once, policy=policy)
+        except (ValueError, TypeError, RuntimeError, SQLAlchemyError) as error:
+            print(f"Scheduler failed: {error}", file=sys.stderr)
+            return 1
 
     if args.command == "check-db":
         try:
