@@ -1,5 +1,6 @@
 import inspect
 from uuid import UUID, uuid4
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,6 +9,7 @@ from pytask_service.arguments import InvalidTaskArguments, normalize_arguments
 from pytask_service.db.models import Task, TaskAttempt, TaskStatus
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import TaskRegistry
+from pytask_service.scheduling.delay import resolve_availability
 
 
 def submit_task(
@@ -17,6 +19,8 @@ def submit_task(
     arguments: object,
     *,
     policy: TaskPolicy | None = None,
+    run_at: datetime | None = None,
+    delay: float | None = None,
 ) -> UUID:
     policy = policy or TaskPolicy()
     handler = registry.get(name)
@@ -26,6 +30,7 @@ def submit_task(
     except TypeError as exc:
         raise InvalidTaskArguments(str(exc)) from exc
 
+    available_at = resolve_availability(session, run_at=run_at, delay=delay)
     task = Task(
         id=uuid4(),
         name=name,
@@ -37,6 +42,8 @@ def submit_task(
         retry_base_seconds=policy.retry_base_seconds,
         retry_max_seconds=policy.retry_max_seconds,
     )
+    if available_at is not None:
+        task.available_at = available_at
     session.add(task)
     session.flush()
     return task.id
