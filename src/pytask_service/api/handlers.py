@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from pytask_service.api.cursors import InvalidCursor
 from pytask_service.api.errors import APIError, error_response
@@ -49,3 +50,21 @@ def register_errors(app: FastAPI) -> None:
         code = {404: "not_found", 405: "method_not_allowed"}.get(error.status_code, "http_error")
         message = {404: "Resource not found", 405: "Method not allowed"}.get(error.status_code, "Request could not be completed")
         return error_response(error.status_code, code, message, headers=error.headers)
+
+    @app.exception_handler(IntegrityError)
+    async def handle_integrity(request: Request, error: IntegrityError) -> JSONResponse:
+        constraint = getattr(getattr(error.orig, "diag", None), "constraint_name", None)
+        if constraint == "uq_schedules_name":
+            return error_response(409, "schedule_name_conflict", "Schedule name already exists")
+        logger.error("API integrity failure", exc_info=(type(error), error, error.__traceback__))
+        return error_response(500, "internal_error", "An internal error occurred")
+
+    @app.exception_handler(SQLAlchemyError)
+    async def handle_database(request: Request, error: SQLAlchemyError) -> JSONResponse:
+        logger.error("API database failure", exc_info=(type(error), error, error.__traceback__))
+        return error_response(503, "database_unavailable", "Database is unavailable")
+
+    @app.exception_handler(Exception)
+    async def handle_unexpected(request: Request, error: Exception) -> JSONResponse:
+        logger.error("Unhandled API failure", exc_info=(type(error), error, error.__traceback__))
+        return error_response(500, "internal_error", "An internal error occurred")
