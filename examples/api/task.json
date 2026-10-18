@@ -1,0 +1,6 @@
+{
+  "name": "math.add",
+  "arguments": {"left": 1, "right": 2},
+  "max_attempts": 3,
+  "timeout_seconds": 30
+}
