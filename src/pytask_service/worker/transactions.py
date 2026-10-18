@@ -1,14 +1,7 @@
-from datetime import datetime
-
-from sqlalchemy import func, select, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-
-def database_now(session: Session) -> datetime:
-    value = session.scalar(select(func.clock_timestamp()))
-    if not isinstance(value, datetime):
-        raise RuntimeError("PostgreSQL did not return its current timestamp")
-    return value
+from pytask_service.db.clock import database_now as database_now
 
 
 def bound_lease_transaction(session: Session) -> None:
