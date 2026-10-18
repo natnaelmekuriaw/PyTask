@@ -20,7 +20,7 @@ $env:PYTASK_REGISTRY = "pytask_service.example_tasks:registry"
 .\.venv\Scripts\pytask-service submit math.add --args-file examples/math-add.json --delay 30
 ```
 
-The task is pending for at least 30 seconds before it can be claimed. A worker
+The worker can claim the task once its stored eligibility time arrives. It
 may begin later because of polling or other queued work. Run a continuous
 worker to pick it up when it becomes eligible:
 
