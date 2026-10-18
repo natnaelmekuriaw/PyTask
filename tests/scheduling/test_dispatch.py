@@ -68,3 +68,18 @@ def test_each_occurrence_copies_its_schedule_policy(isolated_engine: Engine, sch
         task = session.get(Task, dispatch_due(session)[0].id)
         assert task is not None
         assert (task.max_attempts, task.timeout_seconds, task.retry_base_seconds, task.retry_max_seconds) == (7, 15, 2, 30)
+
+
+def test_schedule_history_is_scoped_and_newest_first(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_id = schedule_factory()
+    other_id = schedule_factory()
+    with Session(isolated_engine) as session, session.begin():
+        dispatch_due(session)
+        schedule = get_schedule(session, schedule_id)
+        assert schedule is not None
+        schedule.next_run_at -= timedelta(seconds=120)
+    with Session(isolated_engine) as session, session.begin():
+        dispatch_due(session)
+        rows = list_occurrences(session, schedule_id, limit=1)
+        assert len(rows) == 1 and rows[0].schedule_id == schedule_id
+        assert len(list_occurrences(session, other_id)) == 1
