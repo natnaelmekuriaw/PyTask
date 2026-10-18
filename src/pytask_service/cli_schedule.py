@@ -3,7 +3,7 @@ import json
 import sys
 from uuid import UUID
 
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.orm import Session
 
 from pytask_service.cli_options import (
@@ -105,6 +105,13 @@ def handle_schedule(args: argparse.Namespace) -> int:
                     )
         finally:
             engine.dispose()
+    except IntegrityError as error:
+        constraint = getattr(getattr(error.orig, "diag", None), "constraint_name", None)
+        if constraint == "uq_schedules_name":
+            print("Schedule name already exists", file=sys.stderr)
+        else:
+            print(f"Schedule command failed: {error}", file=sys.stderr)
+        return 1
     except (
         ValueError,
         TypeError,
