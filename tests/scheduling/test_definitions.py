@@ -4,6 +4,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from pytask_service.policy import TaskPolicy
 from pytask_service.scheduling.definitions import get_schedule, list_schedules, set_paused
@@ -50,3 +51,11 @@ def test_resuming_preserves_the_original_due_time(isolated_engine: Engine, sched
         resumed = set_paused(session, schedule_id, False)
         assert not resumed.paused
         assert resumed.next_run_at == due
+
+
+def test_duplicate_names_cannot_replace_existing_schedules(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    original = schedule_factory(name="daily-report")
+    with pytest.raises(IntegrityError):
+        schedule_factory(name="daily-report")
+    with Session(isolated_engine) as session:
+        assert [schedule.id for schedule in list_schedules(session)] == [original]
