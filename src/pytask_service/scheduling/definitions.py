@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from pytask_service.db.clock import database_now
 from pytask_service.db.models import Schedule
+from pytask_service.db.transactions import bound_transaction
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import TaskRegistry
 from pytask_service.scheduling.interval import next_occurrence, validate_interval
@@ -53,6 +54,7 @@ def list_schedules(session: Session, *, limit: int = 100) -> list[Schedule]:
 
 
 def set_paused(session: Session, schedule_id: UUID, paused: bool) -> Schedule:
+    bound_transaction(session)
     schedule = session.scalar(select(Schedule).where(Schedule.id == schedule_id).with_for_update())
     if schedule is None:
         raise ValueError(f"Schedule not found: {schedule_id}")
