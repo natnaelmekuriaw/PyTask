@@ -30,6 +30,8 @@ class AttemptRead(APIModel):
     id: UUID
     task_id: UUID
     number: int
+    queued_at: datetime | None
+    queue_wait_seconds: float | None
     worker_id: str
     status: AttemptStatus
     started_at: datetime

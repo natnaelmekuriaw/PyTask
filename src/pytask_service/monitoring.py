@@ -32,12 +32,17 @@ def task_snapshot(task: Task) -> dict[str, object]:
 
 def attempt_snapshot(attempt: TaskAttempt) -> dict[str, object]:
     duration = None
+    queue_wait = None
+    if attempt.queued_at is not None:
+        queue_wait = max(0.0, (attempt.started_at - attempt.queued_at).total_seconds())
     if attempt.finished_at is not None:
         duration = (attempt.finished_at - attempt.started_at).total_seconds()
     return {
         "id": str(attempt.id),
         "task_id": str(attempt.task_id),
         "number": attempt.number,
+        "queued_at": attempt.queued_at.isoformat() if attempt.queued_at else None,
+        "queue_wait_seconds": queue_wait,
         "worker_id": attempt.worker_id,
         "status": attempt.status,
         "started_at": attempt.started_at.isoformat(),
