@@ -30,3 +30,26 @@ def test_worker_claims_executes_and_finishes_task(isolated_engine: Engine) -> No
         assert task is not None
         assert task.status == TaskStatus.SUCCEEDED.value
         assert task.result == 5
+
+
+@pytest.mark.integration
+def test_worker_records_handler_failure(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        task_id = submit_task(
+            session, registry, "demo.fail", {"message": "expected failure"}
+        )
+
+    worker = Worker(
+        isolated_engine,
+        "pytask_service.example_tasks:registry",
+        executor=lambda path, claim: TaskOutcome.failure(RuntimeError("failed")),
+    )
+    worked = worker.run_once()
+
+    assert worked is not None
+    assert not worked.outcome.succeeded
+    with Session(isolated_engine) as session:
+        task = session.get(Task, task_id)
+        assert task is not None
+        assert task.status == TaskStatus.FAILED.value
+        assert task.error is not None
