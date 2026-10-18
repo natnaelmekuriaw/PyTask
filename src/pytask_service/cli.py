@@ -1,14 +1,13 @@
 import argparse
 import json
 import sys
-from pathlib import Path
 from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from pytask_service.arguments import InvalidTaskArguments
+from pytask_service.cli_options import add_argument_options, add_policy_options, read_argument_text, parse_arguments, read_policy
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
@@ -28,25 +27,8 @@ def main() -> int:
     commands.add_parser("check-db", help="Check the database connection")
     submit = commands.add_parser("submit", help="Queue a registered task")
     submit.add_argument("name", help="Registered task name")
-    input_options = submit.add_mutually_exclusive_group()
-    input_options.add_argument(
-        "--args", default="{}", help="JSON object of keyword arguments"
-    )
-    input_options.add_argument(
-        "--args-file", type=Path, help="Read arguments from JSON"
-    )
-    submit.add_argument(
-        "--max-attempts", type=int, default=3, help="Total attempts including the first"
-    )
-    submit.add_argument(
-        "--timeout", type=float, default=300, help="Execution deadline in seconds"
-    )
-    submit.add_argument(
-        "--retry-base", type=float, default=1, help="Initial retry backoff in seconds"
-    )
-    submit.add_argument(
-        "--retry-max", type=float, default=60, help="Maximum retry backoff in seconds"
-    )
+    add_argument_options(submit)
+    add_policy_options(submit)
     timing = submit.add_mutually_exclusive_group()
     timing.add_argument("--run-at", type=parse_timestamp, help="ISO 8601 timestamp with UTC offset")
     timing.add_argument("--delay", type=float, help="Seconds before the task becomes eligible")
@@ -81,18 +63,13 @@ def main() -> int:
         return 0
 
     if args.command == "submit":
-        if args.args_file is not None:
-            try:
-                raw_arguments = args.args_file.read_text(encoding="utf-8")
-            except (OSError, UnicodeError) as exc:
-                print(f"Cannot read argument file: {exc}", file=sys.stderr)
-                return 1
-        else:
-            raw_arguments = args.args
         try:
-            policy = TaskPolicy(
-                args.max_attempts, args.timeout, args.retry_base, args.retry_max
-            )
+            raw_arguments = read_argument_text(args)
+        except (OSError, UnicodeError) as exc:
+            print(f"Cannot read argument file: {exc}", file=sys.stderr)
+            return 1
+        try:
+            policy = read_policy(args)
             if args.delay is not None:
                 validate_delay(args.delay)
         except ValueError as exc:
@@ -126,10 +103,7 @@ def _submit(
         if settings.registry_path is None:
             raise ValueError("PYTASK_REGISTRY is required for submission")
         registry = load_registry(settings.registry_path)
-        try:
-            arguments = json.loads(raw_arguments)
-        except json.JSONDecodeError as exc:
-            raise InvalidTaskArguments("--args must contain valid JSON") from exc
+        arguments = parse_arguments(raw_arguments)
 
         engine = build_engine(settings)
         try:
