@@ -32,3 +32,18 @@ def test_actual_stream_size_is_checked_without_content_length() -> None:
 
 def test_declared_oversize_body_is_rejected_before_reading() -> None:
     assert send_chunks([], [(b"content-length", b"9")])[0] == 413
+
+
+@pytest.mark.parametrize("length", [b"-1", b"abc"])
+def test_invalid_content_length_has_a_public_error(length: bytes) -> None:
+    assert send_chunks([], [(b"content-length", length)])[0] == 400
+
+
+@pytest.mark.parametrize("media_type", [b"application/json", b"Application/JSON; charset=utf-8", b"application/example+json"])
+def test_json_media_types_and_exact_size_bodies_are_accepted(media_type: bytes) -> None:
+    assert send_chunks([b"1234", b"5678"], [(b"content-type", media_type)]) == (200, {"bytes": 8})
+
+
+def test_bodyless_controls_need_no_content_type() -> None:
+    assert send_chunks([b""], []) == (200, {"bytes": 0})
+    assert send_chunks([b"{}"], [(b"content-type", b"text/plain")])[0] == 415
