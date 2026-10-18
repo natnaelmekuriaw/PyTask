@@ -16,3 +16,18 @@ def test_child_process_returns_task_result() -> None:
 
     assert outcome.succeeded
     assert outcome.result == 5
+
+
+def test_child_process_reports_handler_failure() -> None:
+    task = ClaimedTask(
+        id=uuid4(),
+        name="demo.fail",
+        arguments={"message": "expected failure"},
+        worker_id="worker-one",
+    )
+
+    outcome = run_in_process("pytask_service.example_tasks:registry", task)
+
+    assert not outcome.succeeded
+    assert outcome.error is not None
+    assert "RuntimeError: expected failure" in outcome.error
