@@ -34,3 +34,11 @@ def test_missing_process_result_records_exit_code() -> None:
     assert not outcome.succeeded
     assert outcome.error is not None
     assert "exit code 9" in outcome.error
+
+
+def test_timeout_is_distinct_from_handler_failure() -> None:
+    outcome = TaskOutcome.timeout(5)
+
+    assert not outcome.succeeded
+    assert outcome.timed_out
+    assert outcome.error == "Execution exceeded 5 seconds"
