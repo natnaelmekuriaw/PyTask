@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import sys
 from uuid import UUID
 
@@ -16,6 +17,7 @@ from pytask_service.cli_options import (
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
 from pytask_service.monitoring import task_snapshot
+from pytask_service.observability.events import log_event
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.scheduling.definitions import (
     create_schedule,
@@ -26,6 +28,8 @@ from pytask_service.scheduling.definitions import (
 )
 from pytask_service.scheduling.monitoring import schedule_snapshot
 from pytask_service.scheduling.time import parse_timestamp
+
+logger = logging.getLogger(__name__)
 
 
 def configure_schedule_parser(parser: argparse.ArgumentParser) -> None:
@@ -88,6 +92,7 @@ def handle_schedule(args: argparse.Namespace) -> int:
                         paused=args.paused,
                     )
                     details: object = schedule_snapshot(schedule)
+                    created_schedule_id = schedule.id
                 elif args.schedule_command == "list":
                     details = [
                         schedule_snapshot(item)
@@ -130,5 +135,14 @@ def handle_schedule(args: argparse.Namespace) -> int:
     ) as error:
         print(f"Schedule command failed: {error}", file=sys.stderr)
         return 1
+    if args.schedule_command == "create":
+        log_event(logger, "schedule.created", schedule_id=created_schedule_id)
+    elif args.schedule_command in ("pause", "resume"):
+        event = (
+            "schedule.paused"
+            if args.schedule_command == "pause"
+            else "schedule.resumed"
+        )
+        log_event(logger, event, schedule_id=args.id)
     print(json.dumps(details))
     return 0

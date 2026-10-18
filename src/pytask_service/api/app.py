@@ -2,15 +2,18 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
+from fastapi.routing import iter_route_contexts
 from sqlalchemy.engine import Engine
 
 from pytask_service.api.body_limit import BodyLimitMiddleware
 from pytask_service.api.handlers import register_errors
+from pytask_service.api.request_logging import RequestLoggingMiddleware
 from pytask_service.api.resources import APIResources
-from pytask_service.api.routes import health, schedules, tasks
+from pytask_service.api.routes import health, monitoring, schedules, tasks
 from pytask_service.api.schemas.errors import ErrorResponse
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
+from pytask_service.observability.logging import configure_logging
 from pytask_service.registry import TaskRegistry, load_registry
 
 
@@ -22,6 +25,7 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        configure_logging()
         configured = settings or Settings.from_env()
         handlers = registry
         if handlers is None:
@@ -55,6 +59,13 @@ def create_app(
     )
     versioned.include_router(tasks.router)
     versioned.include_router(schedules.router)
+    versioned.include_router(monitoring.router)
     app.include_router(versioned)
     app.include_router(health.router)
+    templates = {
+        id(context.original_route): context.path
+        for context in iter_route_contexts(app.routes)
+        if context.path is not None
+    }
+    app.add_middleware(RequestLoggingMiddleware, route_templates=templates)
     return app

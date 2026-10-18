@@ -69,6 +69,23 @@ tests marked `integration` and leave server startup to the developer running
 the [API examples](docs/api-examples.md).
 
 Use `feat/short-name` for feature branches and `fix/short-name` for fixes.
+
+Monitoring changes should preserve the [count and timing definitions](docs/monitoring.md).
+Read all aggregate sections with one PostgreSQL snapshot, keep reads bounded
+and read only, and avoid ORM loads of task payloads. Cover empty databases,
+retry eligibility, expired leases, paused schedules, historical nulls, and
+window boundaries. Use explicit stored timestamps instead of real delays.
+
+New execution attempts must retain their eligibility at claim time. Do not
+infer historical queue wait from task creation timestamps or a later retry.
+Keep abandoned attempts out of execution timing.
+
+Emit success events after committing state changes. Cover rollback and
+sensitive-field exclusion when changing event paths. Request identifiers must
+be isolated across concurrent requests, and route labels must use declared
+templates. Do not add raw URLs, SQL, handler payloads, or exception text to
+service event fields. Keep CLI stdout parseable.
+
 Keep commits focused and describe the change in a short subject line.
 
 ## Pull requests

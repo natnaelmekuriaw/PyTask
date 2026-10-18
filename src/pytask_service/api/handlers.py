@@ -10,6 +10,7 @@ from pytask_service.api.cursors import InvalidCursor
 from pytask_service.api.errors import APIError, error_response
 from pytask_service.api.schemas.errors import ErrorDetail
 from pytask_service.arguments import InvalidTaskArguments
+from pytask_service.observability.events import log_event
 from pytask_service.registry import UnknownTaskError
 from pytask_service.scheduling.definitions import ScheduleNotFound
 
@@ -79,21 +80,35 @@ def register_errors(app: FastAPI) -> None:
             return error_response(
                 409, "schedule_name_conflict", "Schedule name already exists"
             )
-        logger.error(
-            "API integrity failure", exc_info=(type(error), error, error.__traceback__)
+        log_event(
+            logger,
+            "api.integrity_failed",
+            level=logging.ERROR,
+            error_type=type(error).__name__,
         )
         return error_response(500, "internal_error", "An internal error occurred")
 
     @app.exception_handler(SQLAlchemyError)
     async def handle_database(request: Request, error: SQLAlchemyError) -> JSONResponse:
-        logger.error(
-            "API database failure", exc_info=(type(error), error, error.__traceback__)
+        log_event(
+            logger,
+            "api.database_failed",
+            level=logging.ERROR,
+            error_type=type(error).__name__,
         )
         return error_response(503, "database_unavailable", "Database is unavailable")
 
     @app.exception_handler(Exception)
     async def handle_unexpected(request: Request, error: Exception) -> JSONResponse:
-        logger.error(
-            "Unhandled API failure", exc_info=(type(error), error, error.__traceback__)
+        log_event(
+            logger,
+            "api.unexpected_failure",
+            level=logging.ERROR,
+            error_type=type(error).__name__,
+            request_id=request.scope.get("pytask.request_id"),
         )
-        return error_response(500, "internal_error", "An internal error occurred")
+        request_id = request.scope.get("pytask.request_id")
+        headers = {"X-Request-ID": request_id} if request_id else None
+        return error_response(
+            500, "internal_error", "An internal error occurred", headers=headers
+        )

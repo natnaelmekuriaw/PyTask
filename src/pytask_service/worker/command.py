@@ -1,14 +1,17 @@
 import json
-import sys
+import logging
 from threading import Event
 
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
 from pytask_service.db.models import TaskStatus
+from pytask_service.observability.events import log_event
 from pytask_service.worker.loop import WorkerLoop
 from pytask_service.worker.policy import WorkerPolicy
 from pytask_service.worker.service import WorkedTask, Worker
 from pytask_service.worker.signals import stop_on_signals
+
+logger = logging.getLogger(__name__)
 
 
 def run_one(settings: Settings, policy: WorkerPolicy | None = None) -> int:
@@ -45,10 +48,10 @@ def run_forever(
             stop_event=stop_event,
             on_result=report,
         )
-        print(f"Worker {worker.worker_id} started", file=sys.stderr, flush=True)
+        log_event(logger, "worker.started", worker_id=worker.worker_id)
         with stop_on_signals(stop_event):
             loop.run()
-        print(f"Worker {worker.worker_id} stopped", file=sys.stderr, flush=True)
+        log_event(logger, "worker.stopped", worker_id=worker.worker_id)
         return 0
     finally:
         engine.dispose()

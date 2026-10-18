@@ -57,3 +57,21 @@ access-control design before enabling untrusted access. Browser CORS is not
 enabled, and does not provide authentication.
 
 See the [contract](api-contract.md) for the supported HTTP surface and limits.
+
+## Monitoring operations
+
+Apply the [monitoring migration](monitoring-upgrade.md) before running this
+version. Readiness now also checks access to the attempt eligibility column.
+The [summary endpoint](monitoring.md) and `pytask-service stats` read persisted
+queue state; neither proves that a worker or scheduler process is alive.
+
+API startup configures service JSON events on stderr. `PYTASK_LOG_LEVEL`
+defaults to INFO. Responses include a generated request identifier, which also
+appears in submission and request events. See the [event reference](operational-logs.md)
+for correlation, privacy boundaries, and log level behavior.
+
+The aggregate statement runs in a read-only transaction with statement and
+lock timeouts. Keep polling frequency proportional to measured database cost.
+Counts are based on retained rows and observation windows; they are not
+process-local or monotonic counters. See [troubleshooting](monitoring-troubleshooting.md)
+for interpreting backlog and timing gaps.

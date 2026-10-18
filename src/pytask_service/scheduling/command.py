@@ -1,14 +1,18 @@
 import json
+import logging
 import sys
 from threading import Event
 
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
+from pytask_service.observability.events import log_event
 from pytask_service.scheduling.enqueue import ScheduledTask
 from pytask_service.scheduling.loop import SchedulerLoop
 from pytask_service.scheduling.policy import SchedulerPolicy
 from pytask_service.scheduling.service import Scheduler
 from pytask_service.worker.signals import stop_on_signals
+
+logger = logging.getLogger(__name__)
 
 
 def report(task: ScheduledTask) -> None:
@@ -41,11 +45,11 @@ def run_scheduler(
                 if not tasks:
                     print("No due schedules", file=sys.stderr)
             else:
-                print("Scheduler started", file=sys.stderr, flush=True)
+                log_event(logger, "scheduler.started")
                 SchedulerLoop(
                     scheduler, policy=policy, stop_event=stopped, on_result=report
                 ).run()
-                print("Scheduler stopped", file=sys.stderr, flush=True)
+                log_event(logger, "scheduler.stopped")
         return 0
     finally:
         engine.dispose()

@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from pytask_service.api.schemas.schedules import ScheduleControl, ScheduleCreate
 from pytask_service.api.task_queries import task_page
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import task_snapshot
+from pytask_service.observability.events import log_event
 from pytask_service.scheduling.definitions import (
     create_schedule,
     get_schedule,
@@ -20,6 +22,7 @@ from pytask_service.scheduling.definitions import (
 from pytask_service.scheduling.monitoring import schedule_snapshot
 
 router = APIRouter(prefix="/schedules", tags=["Schedules"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=Page[ScheduleRead], summary="List recurring schedules")
@@ -69,6 +72,7 @@ def create(
             paused=body.paused,
         )
         result = ScheduleRead.model_validate(schedule_snapshot(schedule))
+    log_event(logger, "schedule.created", schedule_id=result.id)
     response.headers["Location"] = request.url_for("read", schedule_id=result.id).path
     return result
 
@@ -88,9 +92,15 @@ def read(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
 
 def change_state(schedule_id: UUID, session: SessionDep, paused: bool) -> ScheduleRead:
     with session.begin():
-        return ScheduleRead.model_validate(
+        result = ScheduleRead.model_validate(
             schedule_snapshot(set_paused(session, schedule_id, paused))
         )
+    log_event(
+        logger,
+        "schedule.paused" if paused else "schedule.resumed",
+        schedule_id=schedule_id,
+    )
+    return result
 
 
 @router.post(

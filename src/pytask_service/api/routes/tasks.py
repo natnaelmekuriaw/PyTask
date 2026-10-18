@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -11,9 +12,11 @@ from pytask_service.api.schemas.tasks import TaskSubmit
 from pytask_service.api.task_queries import attempt_page, task_page
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
+from pytask_service.observability.events import log_event
 from pytask_service.tasks import get_task, submit_task
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=Page[TaskRead], summary="List tasks")
@@ -64,6 +67,7 @@ def create_task(
         if task is None:
             raise RuntimeError("Submitted task was not found in its transaction")
         result = TaskRead.model_validate(task_snapshot(task))
+    log_event(logger, "task.submitted", task_id=task_id)
     response.headers["Location"] = request.url_for("read_task", task_id=task_id).path
     return result
 

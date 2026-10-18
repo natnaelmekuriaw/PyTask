@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from pytask_service.db.models import Task, TaskStatus
 from pytask_service.example_tasks import registry
+from pytask_service.observability.service import read_snapshot
 from pytask_service.policy import TaskPolicy
 from pytask_service.tasks import list_attempts, submit_task
 from pytask_service.worker.service import Worker
@@ -45,6 +46,9 @@ def test_new_worker_recovers_after_claiming_process_dies(
         task = session.get(Task, task_id)
         assert task is not None and task.status == TaskStatus.RUNNING.value
         task.lease_expires_at = database_now(session) - timedelta(seconds=1)
+    with Session(isolated_engine) as session:
+        before = read_snapshot(session)
+        assert before.queue.expired_running == 1
     worker = Worker(isolated_engine, "pytask_service.example_tasks:registry")
     deadline = monotonic() + 5
     worked = worker.run_once()
@@ -59,3 +63,11 @@ def test_new_worker_recovers_after_claiming_process_dies(
         attempts = list_attempts(session, task_id)
         assert [attempt.number for attempt in attempts] == [1, 2]
         assert [attempt.status for attempt in attempts] == ["abandoned", "succeeded"]
+    with Session(isolated_engine) as session:
+        after = read_snapshot(session)
+        assert after.queue.expired_running == 0
+        assert after.queue.succeeded == 1
+        assert after.attempts.abandoned == after.attempts.succeeded == 1
+        assert after.attempts.retries_started == 1
+        assert after.attempts.execution.samples == 1
+        assert after.attempts.queue_wait.samples == 2

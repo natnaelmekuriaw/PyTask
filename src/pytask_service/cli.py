@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime
 from uuid import UUID
@@ -7,6 +8,7 @@ from uuid import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from pytask_service.cli_monitoring import show_stats
 from pytask_service.cli_options import (
     add_argument_options,
     add_policy_options,
@@ -19,6 +21,9 @@ from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
+from pytask_service.observability.events import log_event
+from pytask_service.observability.logging import configure_logging
+from pytask_service.observability.window import DEFAULT_WINDOW_SECONDS
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.scheduling.command import run_scheduler
@@ -29,11 +34,15 @@ from pytask_service.tasks import get_task, list_attempts, submit_task
 from pytask_service.worker.command import run_forever, run_one
 from pytask_service.worker.policy import WorkerPolicy
 
+logger = logging.getLogger(__name__)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pytask-service")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check-db", help="Check the database connection")
+    stats = commands.add_parser("stats", help="Show queue and execution statistics")
+    stats.add_argument("--window-seconds", type=int, default=DEFAULT_WINDOW_SECONDS)
     configure_schedule_parser(
         commands.add_parser("schedule", help="Manage recurring schedules")
     )
@@ -70,6 +79,14 @@ def main() -> int:
     scheduler.add_argument("--batch-size", type=int, default=100)
     scheduler.add_argument("--poll-interval", type=float, default=1)
     args = parser.parse_args()
+    try:
+        configure_logging()
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        return 1
+
+    if args.command == "stats":
+        return show_stats(args.window_seconds)
 
     if args.command == "schedule":
         return handle_schedule(args)
@@ -163,6 +180,7 @@ def _submit(
         print(f"Task submission failed: {exc}", file=sys.stderr)
         return 1
 
+    log_event(logger, "task.submitted", task_id=task_id)
     print(json.dumps({"id": str(task_id), "status": TaskStatus.PENDING.value}))
     return 0
 

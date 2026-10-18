@@ -92,14 +92,41 @@ Validation details give locations, messages, and types without echoing input
 values. Malformed JSON returns 400, invalid fields return 422, oversized bodies
 return 413, and unsupported body media types return 415. Database failures
 return 503; unexpected internal failures return 500. SQL and exception details
-are logged on the server and are not included in those responses.
+are excluded from service events and from those responses. Service events
+record exception classes for diagnosis.
 
 ## Access scope
 
 This stage serves trusted operators and has no authentication or tenant
 isolation. Keep the server bound to localhost. Authentication and authorization
-are required before exposing it to untrusted clients: monitoring includes
+are required before exposing it to untrusted clients: task inspection includes
 stored arguments, results, and execution errors.
 
 See [API examples](api-examples.md), [upgrade steps](api-upgrade.md), and
 [operation notes](api-operations.md).
+
+## Operational summary
+
+`GET /api/v1/monitoring?window_seconds=3600` returns an aggregate snapshot.
+The optional window is an integer from 60 through 604800 seconds. Invalid
+windows return 422 before database access. Success responses use
+`Cache-Control: no-store`.
+
+The response contains `observed_at`, `window_seconds`, `window_start`,
+`queue`, `attempts`, and `schedules`. Queue and schedule counts cover all
+retained rows. Attempt outcomes and timings use the requested window. No
+arguments, results, exception messages, or worker identities appear in this
+aggregate response. See the [definitions](monitoring.md) for subset counts
+and timing sample rules.
+
+One SQL statement reads the aggregate sections from a consistent PostgreSQL
+snapshot. The transaction is read only, with bounded statement and lock waits.
+A database failure returns the standard 503 envelope. Reading statistics
+does not run workers, recover claims, or dispatch schedules.
+
+Attempt history responses additionally include nullable `queued_at` and
+`queue_wait_seconds` fields. Historical attempts can have neither value.
+
+Responses carry a generated `X-Request-ID`, including validation, body limit,
+and unexpected error responses. The ID links service events for one request;
+it is not an authentication token or a submission idempotency key.
