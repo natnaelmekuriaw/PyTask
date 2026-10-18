@@ -16,3 +16,22 @@ class QueueStats:
     succeeded: int
     failed: int
     oldest_ready_age_seconds: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class TimingStats:
+    samples: int
+    min_seconds: float | None
+    mean_seconds: float | None
+    max_seconds: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class AttemptStats:
+    succeeded: int
+    failed: int
+    timed_out: int
+    abandoned: int
+    retries_started: int
+    execution: TimingStats
+    queue_wait: TimingStats
