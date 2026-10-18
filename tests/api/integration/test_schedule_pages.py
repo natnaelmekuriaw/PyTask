@@ -29,3 +29,11 @@ def test_schedule_filters_combine_paused_state_and_handler(database_client: Test
     schedule(paused=True, task_name="demo.greet", arguments={"name": "reader"})
     page = database_client.get("/api/v1/schedules", params={"paused": "true", "task_name": "math.add"}).json()
     assert [item["id"] for item in page["items"]] == [selected]
+
+
+def test_schedule_cursor_requires_its_original_filters(database_client: TestClient, schedule: Callable[..., dict[str, Any]]) -> None:
+    schedule(paused=True)
+    schedule(paused=True)
+    first = database_client.get("/api/v1/schedules", params={"limit": 1, "paused": "true"}).json()
+    changed = database_client.get("/api/v1/schedules", params={"cursor": first["next_cursor"]})
+    assert changed.status_code == 422 and changed.json()["error"]["code"] == "invalid_cursor"
