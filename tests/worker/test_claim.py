@@ -9,6 +9,12 @@ from pytask_service.worker.claim import claim_next
 
 
 @pytest.mark.integration
+def test_empty_queue_returns_no_claim(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        assert claim_next(session, "worker-one") is None
+
+
+@pytest.mark.integration
 def test_claim_marks_task_running(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
         task_id = submit_task(
