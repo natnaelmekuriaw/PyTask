@@ -63,6 +63,7 @@ def claim_next(
             id=token,
             task_id=task.id,
             number=task.attempt_count,
+            queued_at=task.available_at,
             worker_id=worker_id,
             status=AttemptStatus.RUNNING.value,
             started_at=now,
