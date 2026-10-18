@@ -31,3 +31,15 @@ def test_child_process_reports_handler_failure() -> None:
     assert not outcome.succeeded
     assert outcome.error is not None
     assert "RuntimeError: expected failure" in outcome.error
+
+
+def test_child_exit_without_message_is_failure() -> None:
+    task = ClaimedTask(
+        id=uuid4(), name="test.crash", arguments={}, worker_id="worker-one"
+    )
+
+    outcome = run_in_process("tests.worker.sample_tasks:registry", task)
+
+    assert not outcome.succeeded
+    assert outcome.error is not None
+    assert "exit code 7" in outcome.error
