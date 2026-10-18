@@ -52,3 +52,19 @@ def test_expired_worker_cannot_finish_even_before_recovery(isolated_engine: Engi
     with Session(isolated_engine) as session, session.begin():
         with pytest.raises(LostClaimError):
             finish_task(session, claim, TaskOutcome.success(3))
+
+
+@pytest.mark.integration
+def test_last_timeout_finishes_task_and_attempt(isolated_engine: Engine) -> None:
+    claim = make_claim(isolated_engine, max_attempts=1)
+    with Session(isolated_engine) as session, session.begin():
+        assert finish_task(session, claim, TaskOutcome.timeout(1)) == TaskStatus.FAILED
+    with Session(isolated_engine) as session:
+        task = session.get(Task, claim.id)
+        attempt = session.get(TaskAttempt, claim.token)
+        assert task is not None and attempt is not None
+        assert task.finished_at is not None
+        assert task.status == TaskStatus.FAILED.value
+        assert attempt.status == AttemptStatus.TIMED_OUT.value
+    with Session(isolated_engine) as session, session.begin():
+        assert claim_next(session, "worker-two") is None
