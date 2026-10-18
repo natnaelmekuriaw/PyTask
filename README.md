@@ -4,9 +4,9 @@ PyTask is a PostgreSQL-backed task execution service for registered Python
 functions. It is being built around task claiming, retries, leases, and crash
 recovery.
 
-The current branch contains the project foundation: an installable package,
-database configuration, migration tooling, and development checks. Task
-submission and workers are planned for the next stages.
+The current stage supports registering named functions, submitting tasks with
+JSON arguments, and reading their status. Submitted tasks stay pending until
+the worker engine is added in the next stage.
 
 ## Requirements
 
@@ -43,13 +43,55 @@ Run the checks with:
 
 The integration test runs when `PYTASK_DATABASE_URL` is set and skips otherwise.
 
+## Submit a task
+
+The [example registry](src/pytask_service/example_tasks.py) contains a
+`math.add` task. Point the CLI at that registry and submit the example payload:
+
+```powershell
+$env:PYTASK_REGISTRY = "pytask_service.example_tasks:registry"
+.\.venv\Scripts\pytask-service submit math.add --args-file examples/math-add.json
+```
+
+The command prints a task ID and `pending` status. Copy the ID from the output
+to inspect the stored record:
+
+```powershell
+.\.venv\Scripts\pytask-service status "PASTE_TASK_ID_HERE"
+```
+
+You can also pass a JSON object directly with `--args`. `--args-file` is easier
+to use across shells. The arguments must be a JSON object of keyword arguments
+accepted by the registered function. The CLI rejects unknown task names,
+invalid arguments, and payloads larger than 64 KiB.
+
+Register application tasks in a Python module that exports a `TaskRegistry`:
+
+```python
+from pytask_service.registry import TaskRegistry
+
+registry = TaskRegistry()
+
+
+def uppercase(text: str) -> str:
+    return text.upper()
+
+
+registry.register("text.uppercase", uppercase)
+```
+
+Set `PYTASK_REGISTRY` to that module and attribute, such as
+`my_app.tasks:registry`. Only import trusted task modules. Submission validates
+the function signature and stores its name and arguments; it does not call the
+function.
+
 ## Planned milestones
 
-1. Register and submit named tasks with JSON arguments.
+1. Register and submit named tasks with JSON arguments. **Current stage.**
 2. Claim and run tasks across multiple workers.
 3. Add retries, leases, crash recovery, and timeouts.
 4. Add delayed and recurring scheduling.
-5. Expose submission and monitoring through an API and CLI.
+5. Expose submission and monitoring through an API.
 
 PyTask will use at-least-once execution. Task handlers must be safe to run more
 than once; a worker may lose its lease after starting a task.
