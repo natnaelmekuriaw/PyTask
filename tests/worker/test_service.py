@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from pytask_service.db.models import Task, TaskStatus
 from pytask_service.example_tasks import registry
+from pytask_service.policy import TaskPolicy
 from pytask_service.tasks import submit_task
 from pytask_service.worker.outcome import TaskOutcome
 from pytask_service.worker.service import Worker
@@ -11,7 +12,7 @@ from pytask_service.worker.service import Worker
 
 @pytest.mark.integration
 def test_idle_worker_does_not_run_executor(isolated_engine: Engine) -> None:
-    def unexpected_executor(path: str, claim: object) -> TaskOutcome:
+    def unexpected_executor(path: str, claim: object, cancel: object) -> TaskOutcome:
         raise AssertionError("No task should be executed")
 
     worker = Worker(
@@ -32,7 +33,7 @@ def test_worker_claims_executes_and_finishes_task(isolated_engine: Engine) -> No
         isolated_engine,
         "pytask_service.example_tasks:registry",
         worker_id="worker-one",
-        executor=lambda path, claim: TaskOutcome.success(5),
+        executor=lambda path, claim, cancel: TaskOutcome.success(5),
     )
     worked = worker.run_once()
 
@@ -67,13 +68,13 @@ def test_worker_runs_real_child_process(isolated_engine: Engine) -> None:
 def test_worker_records_handler_failure(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
         task_id = submit_task(
-            session, registry, "demo.fail", {"message": "expected failure"}
+            session, registry, "demo.fail", {"message": "expected failure"}, policy=TaskPolicy(max_attempts=1)
         )
 
     worker = Worker(
         isolated_engine,
         "pytask_service.example_tasks:registry",
-        executor=lambda path, claim: TaskOutcome.failure(RuntimeError("failed")),
+        executor=lambda path, claim, cancel: TaskOutcome.failure(RuntimeError("failed")),
     )
     worked = worker.run_once()
 
@@ -89,9 +90,9 @@ def test_worker_records_handler_failure(isolated_engine: Engine) -> None:
 @pytest.mark.integration
 def test_worker_records_executor_error(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
-        task_id = submit_task(session, registry, "math.add", {"left": 1, "right": 2})
+        task_id = submit_task(session, registry, "math.add", {"left": 1, "right": 2}, policy=TaskPolicy(max_attempts=1))
 
-    def broken_executor(path: str, claim: object) -> TaskOutcome:
+    def broken_executor(path: str, claim: object, cancel: object) -> TaskOutcome:
         raise OSError("process launch failed")
 
     worker = Worker(
