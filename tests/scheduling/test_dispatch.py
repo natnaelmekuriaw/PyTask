@@ -94,3 +94,19 @@ def test_batch_limit_leaves_remaining_schedules_for_the_next_tick(isolated_engin
         second = dispatch_due(session, batch_size=2)
     assert len(first) == 2 and len(second) == 1
     assert len({task.schedule_id for task in [*first, *second]}) == 3
+
+
+def test_rollback_discards_both_task_and_cursor_changes(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_id = schedule_factory()
+    with Session(isolated_engine) as session:
+        transaction = session.begin()
+        schedule = get_schedule(session, schedule_id)
+        assert schedule is not None
+        original = schedule.next_run_at
+        assert len(dispatch_due(session)) == 1
+        transaction.rollback()
+    with Session(isolated_engine) as session, session.begin():
+        schedule = get_schedule(session, schedule_id)
+        assert schedule is not None and schedule.next_run_at == original
+        assert session.scalar(select(func.count()).select_from(Task)) == 0
+        assert len(dispatch_due(session)) == 1
