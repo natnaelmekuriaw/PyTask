@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import UTC, datetime
+from uuid import uuid4
 
 import pytest
 
 from pytask_service.registry import TaskRegistry, UnknownTaskError
+from pytask_service.db.models import Schedule
 from pytask_service.scheduling.definitions import (
     create_schedule,
     validate_schedule_name,
@@ -26,7 +28,6 @@ def test_unknown_handlers_are_rejected_before_database_access() -> None:
 
 @pytest.mark.parametrize("limit", [0, -1, True, 1001])
 def test_listing_rejects_unbounded_or_invalid_limits(limit: int) -> None:
-    from uuid import uuid4
     with pytest.raises(ValueError, match="Limit"):
         list_schedules(None, limit=limit)
     with pytest.raises(ValueError, match="Limit"):
@@ -46,3 +47,21 @@ def test_schedule_start_must_be_timezone_aware() -> None:
             interval_seconds=60,
             start_at=datetime(2027, 1, 1),
         )
+
+
+def test_creating_a_schedule_copies_arguments_without_running_the_handler() -> None:
+    calls: list[object] = []
+    registry = TaskRegistry()
+    registry.register("example", lambda payload: calls.append(payload))
+    class RecordingSession:
+        schedule: Schedule | None = None
+        def add(self, schedule: Schedule) -> None:
+            self.schedule = schedule
+        def flush(self) -> None:
+            pass
+    session = RecordingSession()
+    arguments = {"payload": {"value": 1}}
+    schedule = create_schedule(session, registry, "copy-check", "example", arguments, interval_seconds=60, start_at=datetime(2027, 1, 1, tzinfo=UTC))
+    arguments["payload"]["value"] = 2
+    assert schedule.arguments == {"payload": {"value": 1}}
+    assert session.schedule is schedule and calls == []
