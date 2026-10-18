@@ -9,7 +9,9 @@ from pytask_service.worker.transactions import bound_lease_transaction, database
 from pytask_service.worker.transitions import fail_or_retry
 
 
-def finish_task(session: Session, claim: ClaimedTask, outcome: TaskOutcome) -> TaskStatus:
+def finish_task(
+    session: Session, claim: ClaimedTask, outcome: TaskOutcome
+) -> TaskStatus:
     bound_lease_transaction(session)
     task = session.scalar(
         select(Task)
@@ -40,7 +42,13 @@ def finish_task(session: Session, claim: ClaimedTask, outcome: TaskOutcome) -> T
         task.lease_expires_at = None
         status = TaskStatus.SUCCEEDED
     else:
-        attempt.status = AttemptStatus.TIMED_OUT.value if outcome.timed_out else AttemptStatus.FAILED.value
-        status = fail_or_retry(task, now, outcome.error or "Task failed without an error message")
+        attempt.status = (
+            AttemptStatus.TIMED_OUT.value
+            if outcome.timed_out
+            else AttemptStatus.FAILED.value
+        )
+        status = fail_or_retry(
+            task, now, outcome.error or "Task failed without an error message"
+        )
     session.flush()
     return status

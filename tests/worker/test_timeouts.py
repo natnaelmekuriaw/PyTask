@@ -47,7 +47,9 @@ def test_lost_lease_stops_running_child() -> None:
     assert {child.pid for child in multiprocessing.active_children()} == before
 
 
-def test_pre_cancelled_claim_never_starts_a_child(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pre_cancelled_claim_never_starts_a_child(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     cancel = Event()
     cancel.set()
     task = ClaimedTask(uuid4(), "test.sleep", {"seconds": 30}, "worker-one")

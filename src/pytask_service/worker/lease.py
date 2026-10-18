@@ -20,7 +20,9 @@ def renew_claim(session: Session, claim: ClaimedTask, lease_seconds: float) -> b
             Task.worker_id == claim.worker_id,
             Task.lease_expires_at > func.clock_timestamp(),
         )
-        .values(lease_expires_at=func.clock_timestamp() + timedelta(seconds=lease_seconds))
+        .values(
+            lease_expires_at=func.clock_timestamp() + timedelta(seconds=lease_seconds)
+        )
         .returning(Task.id)
     )
     return renewed is not None

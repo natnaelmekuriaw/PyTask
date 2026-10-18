@@ -9,23 +9,35 @@ from pytask_service.worker.errors import LostClaimError
 
 class LeaseKeeper:
     def __init__(
-        self, renew: Callable[[], bool], interval: float,
-        *, lease_seconds: float = 30, initial_deadline: float | None = None,
+        self,
+        renew: Callable[[], bool],
+        interval: float,
+        *,
+        lease_seconds: float = 30,
+        initial_deadline: float | None = None,
     ) -> None:
         if not math.isfinite(interval) or interval <= 0:
             raise ValueError("Heartbeat interval must be positive and finite")
         if not math.isfinite(lease_seconds) or lease_seconds <= interval:
-            raise ValueError("Lease duration must be finite and exceed the heartbeat interval")
+            raise ValueError(
+                "Lease duration must be finite and exceed the heartbeat interval"
+            )
         self.cancel_event = Event()
         self._stop_event = Event()
         self._renew = renew
         self._interval = interval
         self._lease_seconds = lease_seconds
-        self._deadline = initial_deadline if initial_deadline is not None else monotonic() + lease_seconds
+        self._deadline = (
+            initial_deadline
+            if initial_deadline is not None
+            else monotonic() + lease_seconds
+        )
         self._condition = Condition()
         self._error: Exception | None = None
         self._thread = Thread(target=self._run, name="pytask-lease", daemon=True)
-        self._watchdog = Thread(target=self._watch_deadline, name="pytask-watchdog", daemon=True)
+        self._watchdog = Thread(
+            target=self._watch_deadline, name="pytask-watchdog", daemon=True
+        )
 
     def __enter__(self) -> "LeaseKeeper":
         self._watchdog.start()

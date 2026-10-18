@@ -68,13 +68,19 @@ def test_worker_runs_real_child_process(isolated_engine: Engine) -> None:
 def test_worker_records_handler_failure(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
         task_id = submit_task(
-            session, registry, "demo.fail", {"message": "expected failure"}, policy=TaskPolicy(max_attempts=1)
+            session,
+            registry,
+            "demo.fail",
+            {"message": "expected failure"},
+            policy=TaskPolicy(max_attempts=1),
         )
 
     worker = Worker(
         isolated_engine,
         "pytask_service.example_tasks:registry",
-        executor=lambda path, claim, cancel: TaskOutcome.failure(RuntimeError("failed")),
+        executor=lambda path, claim, cancel: TaskOutcome.failure(
+            RuntimeError("failed")
+        ),
     )
     worked = worker.run_once()
 
@@ -90,7 +96,13 @@ def test_worker_records_handler_failure(isolated_engine: Engine) -> None:
 @pytest.mark.integration
 def test_worker_records_executor_error(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
-        task_id = submit_task(session, registry, "math.add", {"left": 1, "right": 2}, policy=TaskPolicy(max_attempts=1))
+        task_id = submit_task(
+            session,
+            registry,
+            "math.add",
+            {"left": 1, "right": 2},
+            policy=TaskPolicy(max_attempts=1),
+        )
 
     def broken_executor(path: str, claim: object, cancel: object) -> TaskOutcome:
         raise OSError("process launch failed")

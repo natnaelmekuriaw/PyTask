@@ -11,8 +11,12 @@ from pytask_service.registry import TaskRegistry
 
 
 def submit_task(
-    session: Session, registry: TaskRegistry, name: str, arguments: object,
-    *, policy: TaskPolicy | None = None,
+    session: Session,
+    registry: TaskRegistry,
+    name: str,
+    arguments: object,
+    *,
+    policy: TaskPolicy | None = None,
 ) -> UUID:
     policy = policy or TaskPolicy()
     handler = registry.get(name)
@@ -23,9 +27,14 @@ def submit_task(
         raise InvalidTaskArguments(str(exc)) from exc
 
     task = Task(
-        id=uuid4(), name=name, arguments=normalized, status=TaskStatus.PENDING.value,
-        attempt_count=0, max_attempts=policy.max_attempts,
-        timeout_seconds=policy.timeout_seconds, retry_base_seconds=policy.retry_base_seconds,
+        id=uuid4(),
+        name=name,
+        arguments=normalized,
+        status=TaskStatus.PENDING.value,
+        attempt_count=0,
+        max_attempts=policy.max_attempts,
+        timeout_seconds=policy.timeout_seconds,
+        retry_base_seconds=policy.retry_base_seconds,
         retry_max_seconds=policy.retry_max_seconds,
     )
     session.add(task)
@@ -38,6 +47,10 @@ def get_task(session: Session, task_id: UUID) -> Task | None:
 
 
 def list_attempts(session: Session, task_id: UUID) -> list[TaskAttempt]:
-    return list(session.scalars(
-        select(TaskAttempt).where(TaskAttempt.task_id == task_id).order_by(TaskAttempt.number)
-    ))
+    return list(
+        session.scalars(
+            select(TaskAttempt)
+            .where(TaskAttempt.task_id == task_id)
+            .order_by(TaskAttempt.number)
+        )
+    )

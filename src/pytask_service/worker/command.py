@@ -29,7 +29,9 @@ def run_one(settings: Settings, policy: WorkerPolicy | None = None) -> int:
         engine.dispose()
 
 
-def run_forever(settings: Settings, poll_interval: float, policy: WorkerPolicy | None = None) -> int:
+def run_forever(
+    settings: Settings, poll_interval: float, policy: WorkerPolicy | None = None
+) -> int:
     if settings.registry_path is None:
         raise ValueError("PYTASK_REGISTRY is required for workers")
 
@@ -53,5 +55,16 @@ def run_forever(settings: Settings, poll_interval: float, policy: WorkerPolicy |
 
 
 def report(worked: WorkedTask) -> None:
-    status = worked.status or (TaskStatus.SUCCEEDED if worked.outcome.succeeded else TaskStatus.FAILED)
-    print(json.dumps({"id": str(worked.id), "status": status.value, "attempt": worked.attempt_number}), flush=True)
+    status = worked.status or (
+        TaskStatus.SUCCEEDED if worked.outcome.succeeded else TaskStatus.FAILED
+    )
+    print(
+        json.dumps(
+            {
+                "id": str(worked.id),
+                "status": status.value,
+                "attempt": worked.attempt_number,
+            }
+        ),
+        flush=True,
+    )

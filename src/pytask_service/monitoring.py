@@ -22,7 +22,9 @@ def task_snapshot(task: Task) -> dict[str, object]:
         "max_attempts": task.max_attempts,
         "timeout_seconds": task.timeout_seconds,
         "available_at": task.available_at.isoformat() if task.available_at else None,
-        "lease_expires_at": task.lease_expires_at.isoformat() if task.lease_expires_at else None,
+        "lease_expires_at": task.lease_expires_at.isoformat()
+        if task.lease_expires_at
+        else None,
     }
 
 

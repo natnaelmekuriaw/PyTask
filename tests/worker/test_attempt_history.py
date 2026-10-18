@@ -17,7 +17,8 @@ from pytask_service.worker.transactions import database_now
 
 @pytest.mark.integration
 def test_attempts_command_keeps_failure_then_success(
-    isolated_engine: Engine, monkeypatch: pytest.MonkeyPatch,
+    isolated_engine: Engine,
+    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     with Session(isolated_engine) as session, session.begin():

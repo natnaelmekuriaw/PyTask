@@ -21,7 +21,9 @@ def test_claim_records_lease_and_attempt_atomically(isolated_engine: Engine) -> 
     assert claim is not None
     with Session(isolated_engine) as session:
         task = session.get(Task, task_id)
-        attempt = session.scalar(select(TaskAttempt).where(TaskAttempt.task_id == task_id))
+        attempt = session.scalar(
+            select(TaskAttempt).where(TaskAttempt.task_id == task_id)
+        )
         assert task is not None and attempt is not None
         assert task.claim_token == claim.token == attempt.id
         assert task.attempt_count == attempt.number == 1

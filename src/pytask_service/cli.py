@@ -32,10 +32,18 @@ def main() -> int:
     input_options.add_argument(
         "--args-file", type=Path, help="Read arguments from JSON"
     )
-    submit.add_argument("--max-attempts", type=int, default=3, help="Total attempts including the first")
-    submit.add_argument("--timeout", type=float, default=300, help="Execution deadline in seconds")
-    submit.add_argument("--retry-base", type=float, default=1, help="Initial retry backoff in seconds")
-    submit.add_argument("--retry-max", type=float, default=60, help="Maximum retry backoff in seconds")
+    submit.add_argument(
+        "--max-attempts", type=int, default=3, help="Total attempts including the first"
+    )
+    submit.add_argument(
+        "--timeout", type=float, default=300, help="Execution deadline in seconds"
+    )
+    submit.add_argument(
+        "--retry-base", type=float, default=1, help="Initial retry backoff in seconds"
+    )
+    submit.add_argument(
+        "--retry-max", type=float, default=60, help="Maximum retry backoff in seconds"
+    )
     status = commands.add_parser("status", help="Show a task's current status")
     status.add_argument("id", type=UUID, help="Task ID")
     attempts = commands.add_parser("attempts", help="Show execution attempt history")
@@ -45,8 +53,12 @@ def main() -> int:
     worker.add_argument(
         "--poll-interval", type=float, default=0.5, help="Seconds between empty polls"
     )
-    worker.add_argument("--lease-seconds", type=float, default=30, help="Lease duration in seconds")
-    worker.add_argument("--heartbeat-seconds", type=float, default=10, help="Lease renewal interval")
+    worker.add_argument(
+        "--lease-seconds", type=float, default=30, help="Lease duration in seconds"
+    )
+    worker.add_argument(
+        "--heartbeat-seconds", type=float, default=10, help="Lease renewal interval"
+    )
     args = parser.parse_args()
 
     if args.command == "check-db":
@@ -72,7 +84,9 @@ def main() -> int:
         else:
             raw_arguments = args.args
         try:
-            policy = TaskPolicy(args.max_attempts, args.timeout, args.retry_base, args.retry_max)
+            policy = TaskPolicy(
+                args.max_attempts, args.timeout, args.retry_base, args.retry_max
+            )
         except ValueError as exc:
             print(f"Task submission failed: {exc}", file=sys.stderr)
             return 1
@@ -131,7 +145,10 @@ def _inspect_task(task_id: UUID, *, history: bool) -> int:
                     return 1
                 details: dict[str, object] | list[dict[str, object]]
                 if history:
-                    details = [attempt_snapshot(attempt) for attempt in list_attempts(session, task_id)]
+                    details = [
+                        attempt_snapshot(attempt)
+                        for attempt in list_attempts(session, task_id)
+                    ]
                 else:
                     details = task_snapshot(task)
         finally:

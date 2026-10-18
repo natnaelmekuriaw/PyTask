@@ -17,7 +17,13 @@ from pytask_service.worker.transactions import database_now
 
 def make_claim(engine: Engine, max_attempts: int = 3) -> ClaimedTask:
     with Session(engine) as session, session.begin():
-        submit_task(session, registry, "math.add", {"left": 1, "right": 2}, policy=TaskPolicy(max_attempts=max_attempts))
+        submit_task(
+            session,
+            registry,
+            "math.add",
+            {"left": 1, "right": 2},
+            policy=TaskPolicy(max_attempts=max_attempts),
+        )
     with Session(engine) as session, session.begin():
         claim = claim_next(session, "worker-one")
     assert claim is not None
@@ -29,7 +35,10 @@ def test_failed_attempt_requeues_task_and_keeps_error(isolated_engine: Engine) -
     claim = make_claim(isolated_engine)
     with Session(isolated_engine) as session, session.begin():
         before = database_now(session)
-        assert finish_task(session, claim, TaskOutcome.failure(ValueError("bad input"))) == TaskStatus.PENDING
+        assert (
+            finish_task(session, claim, TaskOutcome.failure(ValueError("bad input")))
+            == TaskStatus.PENDING
+        )
     with Session(isolated_engine) as session:
         task = session.get(Task, claim.id)
         attempt = session.get(TaskAttempt, claim.token)
@@ -43,7 +52,9 @@ def test_failed_attempt_requeues_task_and_keeps_error(isolated_engine: Engine) -
 
 
 @pytest.mark.integration
-def test_expired_worker_cannot_finish_even_before_recovery(isolated_engine: Engine) -> None:
+def test_expired_worker_cannot_finish_even_before_recovery(
+    isolated_engine: Engine,
+) -> None:
     claim = make_claim(isolated_engine)
     with Session(isolated_engine) as session, session.begin():
         task = session.get(Task, claim.id)

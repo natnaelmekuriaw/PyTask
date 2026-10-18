@@ -2,7 +2,18 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -20,10 +31,17 @@ class TaskStatus(StrEnum):
 class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
-        CheckConstraint("max_attempts BETWEEN 1 AND 1000", name="ck_tasks_max_attempts"),
-        CheckConstraint("attempt_count BETWEEN 0 AND max_attempts", name="ck_tasks_attempt_count"),
+        CheckConstraint(
+            "max_attempts BETWEEN 1 AND 1000", name="ck_tasks_max_attempts"
+        ),
+        CheckConstraint(
+            "attempt_count BETWEEN 0 AND max_attempts", name="ck_tasks_attempt_count"
+        ),
         CheckConstraint("timeout_seconds > 0", name="ck_tasks_timeout"),
-        CheckConstraint("retry_base_seconds > 0 AND retry_max_seconds >= retry_base_seconds", name="ck_tasks_retry_delays"),
+        CheckConstraint(
+            "retry_base_seconds > 0 AND retry_max_seconds >= retry_base_seconds",
+            name="ck_tasks_retry_delays",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -48,11 +66,21 @@ class Task(Base):
     available_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
-    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
-    timeout_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=300, server_default="300")
-    retry_base_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=1, server_default="1")
-    retry_max_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=60, server_default="60")
+    attempt_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    max_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=3, server_default="3"
+    )
+    timeout_seconds: Mapped[float] = mapped_column(
+        Float, nullable=False, default=300, server_default="300"
+    )
+    retry_base_seconds: Mapped[float] = mapped_column(
+        Float, nullable=False, default=1, server_default="1"
+    )
+    retry_max_seconds: Mapped[float] = mapped_column(
+        Float, nullable=False, default=60, server_default="60"
+    )
     claim_token: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True))
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -77,10 +105,14 @@ class TaskAttempt(Base):
     )
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
-    task_id: Mapped[UUID] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
+    task_id: Mapped[UUID] = mapped_column(
+        ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False
+    )
     number: Mapped[int] = mapped_column(Integer, nullable=False)
     worker_id: Mapped[str] = mapped_column(String(128), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error: Mapped[str | None] = mapped_column(Text)

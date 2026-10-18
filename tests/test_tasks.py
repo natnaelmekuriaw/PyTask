@@ -67,8 +67,16 @@ def test_submit_stores_explicit_retry_and_timeout_policy() -> None:
     session = RecordingSession()
 
     submit_task(
-        session, registry, "math.add", {"left": 1, "right": 2},
-        policy=TaskPolicy(max_attempts=5, timeout_seconds=10, retry_base_seconds=2, retry_max_seconds=20),
+        session,
+        registry,
+        "math.add",
+        {"left": 1, "right": 2},
+        policy=TaskPolicy(
+            max_attempts=5,
+            timeout_seconds=10,
+            retry_base_seconds=2,
+            retry_max_seconds=20,
+        ),
     )
 
     assert session.task is not None

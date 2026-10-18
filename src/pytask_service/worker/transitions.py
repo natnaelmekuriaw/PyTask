@@ -7,7 +7,9 @@ from pytask_service.worker.backoff import retry_delay
 
 
 def fail_or_retry(
-    task: Task, now: datetime, error: str,
+    task: Task,
+    now: datetime,
+    error: str,
     random_value: Callable[[], float] = random.random,
 ) -> TaskStatus:
     task.result = None
@@ -16,8 +18,10 @@ def fail_or_retry(
     task.lease_expires_at = None
     if task.attempt_count < task.max_attempts:
         delay = retry_delay(
-            task.attempt_count, task.retry_base_seconds,
-            task.retry_max_seconds, random_value,
+            task.attempt_count,
+            task.retry_base_seconds,
+            task.retry_max_seconds,
+            random_value,
         )
         task.status = TaskStatus.PENDING.value
         task.available_at = now + timedelta(seconds=delay)

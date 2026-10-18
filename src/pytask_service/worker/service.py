@@ -57,8 +57,10 @@ class Worker:
             return None
 
         keeper = LeaseKeeper(
-            lambda: self._renew(claim), self.policy.heartbeat_seconds,
-            lease_seconds=self.policy.lease_seconds, initial_deadline=claim.lease_deadline,
+            lambda: self._renew(claim),
+            self.policy.heartbeat_seconds,
+            lease_seconds=self.policy.lease_seconds,
+            initial_deadline=claim.lease_deadline,
         )
         with keeper:
             try:

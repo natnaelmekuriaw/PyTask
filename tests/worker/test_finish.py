@@ -38,7 +38,11 @@ def test_successful_task_stores_result_and_finish_time(isolated_engine: Engine) 
 def test_failed_task_stores_error(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
         task_id = submit_task(
-            session, registry, "demo.fail", {"message": "expected failure"}, policy=TaskPolicy(max_attempts=1)
+            session,
+            registry,
+            "demo.fail",
+            {"message": "expected failure"},
+            policy=TaskPolicy(max_attempts=1),
         )
 
     with Session(isolated_engine) as session, session.begin():

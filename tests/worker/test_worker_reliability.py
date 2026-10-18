@@ -26,7 +26,9 @@ def test_worker_renews_lease_during_long_execution(isolated_engine: Engine) -> N
         return TaskOutcome.success(3)
 
     worker = Worker(
-        isolated_engine, "pytask_service.example_tasks:registry", executor=long_execution,
+        isolated_engine,
+        "pytask_service.example_tasks:registry",
+        executor=long_execution,
         policy=WorkerPolicy(lease_seconds=3, heartbeat_seconds=0.1),
     )
     worked = worker.run_once()
@@ -52,7 +54,9 @@ def test_worker_does_not_finalize_after_losing_lease(isolated_engine: Engine) ->
         raise LostClaimError("Lease expired during execution")
 
     worker = Worker(
-        isolated_engine, "pytask_service.example_tasks:registry", executor=lose_lease,
+        isolated_engine,
+        "pytask_service.example_tasks:registry",
+        executor=lose_lease,
         policy=WorkerPolicy(lease_seconds=3, heartbeat_seconds=0.05),
     )
     with pytest.raises(LostClaimError):

@@ -19,7 +19,13 @@ from pytask_service.worker.transactions import database_now
 
 def expired_claim(engine: Engine, max_attempts: int = 3) -> ClaimedTask:
     with Session(engine) as session, session.begin():
-        submit_task(session, registry, "math.add", {"left": 1, "right": 2}, policy=TaskPolicy(max_attempts=max_attempts))
+        submit_task(
+            session,
+            registry,
+            "math.add",
+            {"left": 1, "right": 2},
+            policy=TaskPolicy(max_attempts=max_attempts),
+        )
     with Session(engine) as session, session.begin():
         claim = claim_next(session, "crashed-worker")
     assert claim is not None
@@ -60,7 +66,9 @@ def test_expired_final_attempt_is_terminal(isolated_engine: Engine) -> None:
 
 
 @pytest.mark.integration
-def test_recovery_workers_skip_each_others_locked_batch(isolated_engine: Engine) -> None:
+def test_recovery_workers_skip_each_others_locked_batch(
+    isolated_engine: Engine,
+) -> None:
     expired_claim(isolated_engine)
     expired_claim(isolated_engine)
 
@@ -73,7 +81,9 @@ def test_recovery_workers_skip_each_others_locked_batch(isolated_engine: Engine)
 
 
 @pytest.mark.integration
-def test_old_token_cannot_finish_reclaimed_task_with_same_worker_id(isolated_engine: Engine) -> None:
+def test_old_token_cannot_finish_reclaimed_task_with_same_worker_id(
+    isolated_engine: Engine,
+) -> None:
     old = expired_claim(isolated_engine)
     with Session(isolated_engine) as session, session.begin():
         recover_expired(session)

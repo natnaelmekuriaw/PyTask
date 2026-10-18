@@ -6,7 +6,9 @@ from pytask_service.worker.transitions import fail_or_retry
 
 def test_failure_schedules_retry_within_attempt_budget() -> None:
     now = datetime.now(UTC)
-    task = Task(attempt_count=2, max_attempts=3, retry_base_seconds=1, retry_max_seconds=60)
+    task = Task(
+        attempt_count=2, max_attempts=3, retry_base_seconds=1, retry_max_seconds=60
+    )
 
     status = fail_or_retry(task, now, "failed", lambda: 1)
 
@@ -19,7 +21,9 @@ def test_failure_schedules_retry_within_attempt_budget() -> None:
 
 def test_failure_finishes_task_when_attempts_are_exhausted() -> None:
     now = datetime.now(UTC)
-    task = Task(attempt_count=3, max_attempts=3, retry_base_seconds=1, retry_max_seconds=60)
+    task = Task(
+        attempt_count=3, max_attempts=3, retry_base_seconds=1, retry_max_seconds=60
+    )
 
     status = fail_or_retry(task, now, "final failure")
 
