@@ -18,9 +18,9 @@ class BodyLimitMiddleware:
         length = headers.get(b"content-length")
         if length is not None:
             try:
-                declared = int(length)
-                if declared < 0:
+                if not length.isdigit():
                     raise ValueError
+                declared = int(length)
             except ValueError:
                 await error_response(
                     400, "invalid_content_length", "Invalid Content-Length"

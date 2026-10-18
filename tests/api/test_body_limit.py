@@ -52,7 +52,7 @@ def test_declared_oversize_body_is_rejected_before_reading() -> None:
     assert send_chunks([], [(b"content-length", b"9")])[0] == 413
 
 
-@pytest.mark.parametrize("length", [b"-1", b"abc"])
+@pytest.mark.parametrize("length", [b"-1", b"abc", b"+1", b"1_0", b"-0"])
 def test_invalid_content_length_has_a_public_error(length: bytes) -> None:
     assert send_chunks([], [(b"content-length", length)])[0] == 400
 
