@@ -24,3 +24,7 @@ def submit_task(
     session.add(task)
     session.flush()
     return task.id
+
+
+def get_task(session: Session, task_id: UUID) -> Task | None:
+    return session.get(Task, task_id)

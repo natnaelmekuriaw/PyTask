@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -10,7 +11,7 @@ from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.registry import UnknownTaskError, load_registry
-from pytask_service.tasks import submit_task
+from pytask_service.tasks import get_task, submit_task
 
 
 def main() -> int:
@@ -20,6 +21,8 @@ def main() -> int:
     submit = commands.add_parser("submit", help="Queue a registered task")
     submit.add_argument("name", help="Registered task name")
     submit.add_argument("--args", default="{}", help="JSON object of keyword arguments")
+    status = commands.add_parser("status", help="Show a task's current status")
+    status.add_argument("id", type=UUID, help="Task ID")
     args = parser.parse_args()
 
     if args.command == "check-db":
@@ -37,6 +40,8 @@ def main() -> int:
 
     if args.command == "submit":
         return _submit(args.name, args.args)
+    if args.command == "status":
+        return _status(args.id)
 
     return 2
 
@@ -63,6 +68,32 @@ def _submit(name: str, raw_arguments: str) -> int:
         return 1
 
     print(json.dumps({"id": str(task_id), "status": TaskStatus.PENDING.value}))
+    return 0
+
+
+def _status(task_id: UUID) -> int:
+    try:
+        engine = build_engine(Settings.from_env())
+        try:
+            with Session(engine) as session:
+                task = get_task(session, task_id)
+                if task is None:
+                    print(f"Task not found: {task_id}", file=sys.stderr)
+                    return 1
+                details = {
+                    "id": str(task.id),
+                    "name": task.name,
+                    "arguments": task.arguments,
+                    "status": task.status,
+                    "created_at": task.created_at.isoformat(),
+                }
+        finally:
+            engine.dispose()
+    except (ValueError, SQLAlchemyError) as exc:
+        print(f"Task lookup failed: {exc}", file=sys.stderr)
+        return 1
+
+    print(json.dumps(details))
     return 0
 
 
