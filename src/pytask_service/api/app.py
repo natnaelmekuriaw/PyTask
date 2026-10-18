@@ -7,7 +7,7 @@ from sqlalchemy.engine import Engine
 from pytask_service.api.body_limit import BodyLimitMiddleware
 from pytask_service.api.handlers import register_errors
 from pytask_service.api.resources import APIResources
-from pytask_service.api.routes import health, schedules, tasks
+from pytask_service.api.routes import health, monitoring, schedules, tasks
 from pytask_service.api.schemas.errors import ErrorResponse
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
@@ -55,6 +55,7 @@ def create_app(
     )
     versioned.include_router(tasks.router)
     versioned.include_router(schedules.router)
+    versioned.include_router(monitoring.router)
     app.include_router(versioned)
     app.include_router(health.router)
     return app
