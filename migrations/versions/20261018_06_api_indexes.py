@@ -16,13 +16,22 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.create_index("ix_tasks_created_id", "tasks", ["created_at", "id"])
-    op.create_index("ix_tasks_status_created_id", "tasks", ["status", "created_at", "id"])
-    op.create_index("ix_tasks_schedule_created_id", "tasks", ["schedule_id", "created_at", "id"])
+    op.create_index(
+        "ix_tasks_status_created_id", "tasks", ["status", "created_at", "id"]
+    )
+    op.create_index(
+        "ix_tasks_schedule_created_id", "tasks", ["schedule_id", "created_at", "id"]
+    )
     op.create_index("ix_tasks_name_created_id", "tasks", ["name", "created_at", "id"])
     op.create_index("ix_schedules_created_id", "schedules", ["created_at", "id"])
 
 
 def downgrade() -> None:
     op.drop_index("ix_schedules_created_id", table_name="schedules")
-    for name in ("ix_tasks_name_created_id", "ix_tasks_schedule_created_id", "ix_tasks_status_created_id", "ix_tasks_created_id"):
+    for name in (
+        "ix_tasks_name_created_id",
+        "ix_tasks_schedule_created_id",
+        "ix_tasks_status_created_id",
+        "ix_tasks_created_id",
+    ):
         op.drop_index(name, table_name="tasks")

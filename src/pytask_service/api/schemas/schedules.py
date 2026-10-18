@@ -1,7 +1,7 @@
 from datetime import datetime
+from typing import Self
 
 from pydantic import Field, field_validator, model_validator
-from typing import Self
 
 from pytask_service.api.schemas.inputs import TaskInput, timestamp_input
 from pytask_service.scheduling.definitions import validate_schedule_name

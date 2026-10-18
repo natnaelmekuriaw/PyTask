@@ -21,7 +21,12 @@ def live() -> HealthRead:
     return HealthRead()
 
 
-@router.get("/ready", response_model=HealthRead, responses={503: {"model": ErrorResponse}}, summary="Check database and schema access")
+@router.get(
+    "/ready",
+    response_model=HealthRead,
+    responses={503: {"model": ErrorResponse}},
+    summary="Check database and schema access",
+)
 def ready(session: SessionDep) -> HealthRead:
     with session.begin():
         bound_transaction(session)

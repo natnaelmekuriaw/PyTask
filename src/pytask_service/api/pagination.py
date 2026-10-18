@@ -15,7 +15,9 @@ def validate_limit(limit: int) -> None:
         raise ValueError("Page limit must be an integer from 1 to 100")
 
 
-def finish_page[T: (Task, Schedule)](rows: list[T], limit: int, scope: str) -> Records[T]:
+def finish_page[T: (Task, Schedule)](
+    rows: list[T], limit: int, scope: str
+) -> Records[T]:
     items = rows[:limit]
     cursor = None
     if len(rows) > limit:

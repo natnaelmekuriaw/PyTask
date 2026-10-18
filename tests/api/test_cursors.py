@@ -3,7 +3,13 @@ from uuid import uuid4
 
 import pytest
 
-from pytask_service.api.cursors import InvalidCursor, Position, cursor_scope, decode_cursor, encode_cursor
+from pytask_service.api.cursors import (
+    InvalidCursor,
+    Position,
+    cursor_scope,
+    decode_cursor,
+    encode_cursor,
+)
 
 
 def test_cursor_round_trip_preserves_ties_and_microseconds() -> None:
@@ -28,4 +34,6 @@ def test_invalid_cursor_shapes_have_one_public_error(raw: str) -> None:
 
 
 def test_filter_scope_is_independent_of_keyword_order() -> None:
-    assert cursor_scope("tasks", status="pending", name="math.add") == cursor_scope("tasks", name="math.add", status="pending")
+    assert cursor_scope("tasks", status="pending", name="math.add") == cursor_scope(
+        "tasks", name="math.add", status="pending"
+    )

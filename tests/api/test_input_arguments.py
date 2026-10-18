@@ -4,7 +4,9 @@ from pydantic import ValidationError
 from pytask_service.api.schemas.tasks import TaskSubmit
 
 
-@pytest.mark.parametrize("arguments", [[], {"value": float("nan")}, {"value": "x" * 65536}])
+@pytest.mark.parametrize(
+    "arguments", [[], {"value": float("nan")}, {"value": "x" * 65536}]
+)
 def test_http_arguments_follow_the_engine_json_contract(arguments: object) -> None:
     with pytest.raises(ValidationError):
         TaskSubmit.model_validate({"name": "math.add", "arguments": arguments})

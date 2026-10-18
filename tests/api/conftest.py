@@ -15,6 +15,10 @@ class OfflineEngine:
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    app = create_app(Settings("postgresql+psycopg://u:p@localhost/db"), engine=OfflineEngine(), registry=registry)
+    app = create_app(
+        Settings("postgresql+psycopg://u:p@localhost/db"),
+        engine=OfflineEngine(),
+        registry=registry,
+    )
     with TestClient(app) as http:
         yield http

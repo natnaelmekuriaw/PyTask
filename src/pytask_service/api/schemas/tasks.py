@@ -9,7 +9,9 @@ from pytask_service.api.schemas.inputs import TaskInput, timestamp_input
 class TaskSubmit(TaskInput):
     name: str = Field(min_length=1, max_length=128, pattern=r"^[a-z][a-z0-9_.-]*$")
     run_at: datetime | None = None
-    delay_seconds: float | None = Field(default=None, strict=True, ge=0, le=31536000, allow_inf_nan=False)
+    delay_seconds: float | None = Field(
+        default=None, strict=True, ge=0, le=31536000, allow_inf_nan=False
+    )
 
     @field_validator("run_at", mode="before")
     @classmethod
