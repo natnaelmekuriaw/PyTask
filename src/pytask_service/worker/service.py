@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from threading import Event
@@ -7,6 +8,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from pytask_service.db.models import TaskStatus
+from pytask_service.observability.events import log_event
 from pytask_service.registry import load_registry
 from pytask_service.worker.claim import ClaimedTask, claim_next
 from pytask_service.worker.errors import LostClaimError
@@ -21,6 +23,7 @@ from pytask_service.worker.runner import run_in_process
 from pytask_service.worker.transactions import bound_lease_transaction
 
 TaskExecutor = Callable[[str, ClaimedTask, Event], TaskOutcome]
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +53,10 @@ class Worker:
 
     def run_once(self) -> WorkedTask | None:
         with Session(self.engine) as session, session.begin():
-            recover_expired(session, self.policy.recovery_batch_size)
+            recovered = recover_expired(session, self.policy.recovery_batch_size)
+        if recovered:
+            log_event(logger, "worker.leases_recovered", worker_id=self.worker_id,
+                      count=recovered)
         with Session(self.engine) as session, session.begin():
             claim = claim_next(session, self.worker_id, self.policy.lease_seconds)
         if claim is None:
