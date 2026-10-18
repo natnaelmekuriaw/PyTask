@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
 
+from pytask_service.db.options import DatabaseOptions
 from pytask_service.environment import read_secret
 
 
@@ -11,6 +12,7 @@ from pytask_service.environment import read_secret
 class Settings:
     database_url: str = field(repr=False)
     registry_path: str | None = None
+    database: DatabaseOptions = field(default_factory=DatabaseOptions)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -31,4 +33,8 @@ class Settings:
             )
 
         registry_path = os.environ.get("PYTASK_REGISTRY", "").strip() or None
-        return cls(database_url=database_url, registry_path=registry_path)
+        return cls(
+            database_url=database_url,
+            registry_path=registry_path,
+            database=DatabaseOptions.from_env(),
+        )
