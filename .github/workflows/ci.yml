@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: pytask
+          POSTGRES_USER: pytask
+          POSTGRES_PASSWORD: pytask
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pytask -d pytask"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 10
+    env:
+      PYTASK_DATABASE_URL: postgresql+psycopg://pytask:pytask@localhost:5432/pytask
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+      - run: alembic upgrade head
+      - run: pytest -q
