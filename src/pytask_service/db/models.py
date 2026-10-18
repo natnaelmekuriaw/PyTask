@@ -125,6 +125,7 @@ class TaskAttempt(Base):
         ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False
     )
     number: Mapped[int] = mapped_column(Integer, nullable=False)
+    queued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     worker_id: Mapped[str] = mapped_column(String(128), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     started_at: Mapped[datetime] = mapped_column(
@@ -132,6 +133,10 @@ class TaskAttempt(Base):
     )
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error: Mapped[str | None] = mapped_column(Text)
+
+
+Index("ix_task_attempts_finished", TaskAttempt.finished_at)
+Index("ix_task_attempts_started", TaskAttempt.started_at)
 
 
 class Schedule(Base):
