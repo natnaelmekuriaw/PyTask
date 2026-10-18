@@ -6,14 +6,16 @@ from threading import Event
 
 @contextmanager
 def stop_on_signals(stop_event: Event) -> Iterator[None]:
-    previous: dict[signal.Signals, object] = {}
+    previous = {
+        signum: signal.getsignal(signum)
+        for signum in (signal.SIGINT, signal.SIGTERM)
+    }
 
     def request_stop(signum: int, frame: object) -> None:
         stop_event.set()
 
     try:
-        for signum in (signal.SIGINT, signal.SIGTERM):
-            previous[signum] = signal.getsignal(signum)
+        for signum in previous:
             signal.signal(signum, request_stop)
         yield
     finally:
