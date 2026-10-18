@@ -92,6 +92,7 @@ def handle_schedule(args: argparse.Namespace) -> int:
                         paused=args.paused,
                     )
                     details: object = schedule_snapshot(schedule)
+                    created_schedule_id = schedule.id
                 elif args.schedule_command == "list":
                     details = [
                         schedule_snapshot(item)
@@ -135,7 +136,7 @@ def handle_schedule(args: argparse.Namespace) -> int:
         print(f"Schedule command failed: {error}", file=sys.stderr)
         return 1
     if args.schedule_command == "create":
-        log_event(logger, "schedule.created", schedule_id=schedule.id)
+        log_event(logger, "schedule.created", schedule_id=created_schedule_id)
     elif args.schedule_command in ("pause", "resume"):
         event = "schedule.paused" if args.schedule_command == "pause" else "schedule.resumed"
         log_event(logger, event, schedule_id=args.id)
