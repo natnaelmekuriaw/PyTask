@@ -103,6 +103,17 @@ attempt. Retry delays use exponential backoff with full jitter. Handlers must
 tolerate repeated execution; see the [reliability contract](docs/reliability.md)
 for idempotency guidance.
 
+To make a task eligible later, add `--delay` in seconds:
+
+```powershell
+.\.venv\Scripts\pytask-service submit math.add --args-file examples/math-add.json --delay 30
+```
+
+Alternatively, use `--run-at` with an ISO 8601 timestamp containing a UTC
+offset. The two timing options are mutually exclusive. Delayed tasks use the
+existing queue and need only a worker; the execution timeout starts when the
+worker starts the task process.
+
 ## Run a worker
 
 After submitting a task, process one queued task:
