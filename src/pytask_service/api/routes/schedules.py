@@ -5,12 +5,15 @@ from fastapi import APIRouter, Response, Query
 
 from pytask_service.api.dependencies import ResourcesDep, SessionDep
 from pytask_service.api.errors import APIError
-from pytask_service.api.schemas.monitoring import ScheduleRead
+from pytask_service.api.schemas.monitoring import ScheduleRead, TaskRead
 from pytask_service.api.schemas.schedules import ScheduleCreate
 from pytask_service.scheduling.definitions import create_schedule, get_schedule, set_paused
 from pytask_service.scheduling.monitoring import schedule_snapshot
 from pytask_service.api.schedule_queries import schedule_page
 from pytask_service.api.schemas.pages import Page
+from pytask_service.api.task_queries import task_page
+from pytask_service.db.models import TaskStatus
+from pytask_service.monitoring import task_snapshot
 
 router = APIRouter(prefix="/schedules", tags=["Schedules"])
 
@@ -53,3 +56,12 @@ def pause(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
 @router.post("/{schedule_id}/resume", response_model=ScheduleRead, summary="Resume dispatch on the original cadence")
 def resume(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
     return change_state(schedule_id, session, False)
+
+
+@router.get("/{schedule_id}/tasks", response_model=Page[TaskRead], summary="List schedule occurrences")
+def occurrences(schedule_id: UUID, session: SessionDep, limit: Annotated[int, Query(ge=1, le=100)] = 50, cursor: Annotated[str | None, Query(max_length=1024)] = None, status: TaskStatus | None = None) -> Page[TaskRead]:
+    with session.begin():
+        if get_schedule(session, schedule_id) is None:
+            raise APIError(404, "schedule_not_found", "Schedule not found")
+        page = task_page(session, limit=limit, cursor=cursor, schedule_id=schedule_id, status=status)
+        return Page(items=[TaskRead.model_validate(task_snapshot(task)) for task in page.items], next_cursor=page.next_cursor)
