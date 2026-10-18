@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -14,6 +15,8 @@ from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
+from pytask_service.scheduling.time import parse_timestamp
+from pytask_service.scheduling.delay import validate_delay
 from pytask_service.tasks import get_task, list_attempts, submit_task
 from pytask_service.worker.command import run_forever, run_one
 from pytask_service.worker.policy import WorkerPolicy
@@ -44,6 +47,9 @@ def main() -> int:
     submit.add_argument(
         "--retry-max", type=float, default=60, help="Maximum retry backoff in seconds"
     )
+    timing = submit.add_mutually_exclusive_group()
+    timing.add_argument("--run-at", type=parse_timestamp, help="ISO 8601 timestamp with UTC offset")
+    timing.add_argument("--delay", type=float, help="Seconds before the task becomes eligible")
     status = commands.add_parser("status", help="Show a task's current status")
     status.add_argument("id", type=UUID, help="Task ID")
     attempts = commands.add_parser("attempts", help="Show execution attempt history")
@@ -87,10 +93,12 @@ def main() -> int:
             policy = TaskPolicy(
                 args.max_attempts, args.timeout, args.retry_base, args.retry_max
             )
+            if args.delay is not None:
+                validate_delay(args.delay)
         except ValueError as exc:
             print(f"Task submission failed: {exc}", file=sys.stderr)
             return 1
-        return _submit(args.name, raw_arguments, policy)
+        return _submit(args.name, raw_arguments, policy, run_at=args.run_at, delay=args.delay)
     if args.command == "status":
         return _inspect_task(args.id, history=False)
     if args.command == "attempts":
@@ -109,7 +117,10 @@ def main() -> int:
     return 2
 
 
-def _submit(name: str, raw_arguments: str, policy: TaskPolicy | None = None) -> int:
+def _submit(
+    name: str, raw_arguments: str, policy: TaskPolicy | None = None,
+    *, run_at: datetime | None = None, delay: float | None = None,
+) -> int:
     try:
         settings = Settings.from_env()
         if settings.registry_path is None:
@@ -123,7 +134,7 @@ def _submit(name: str, raw_arguments: str, policy: TaskPolicy | None = None) -> 
         engine = build_engine(settings)
         try:
             with Session(engine) as session, session.begin():
-                task_id = submit_task(session, registry, name, arguments, policy=policy)
+                task_id = submit_task(session, registry, name, arguments, policy=policy, run_at=run_at, delay=delay)
         finally:
             engine.dispose()
     except (ValueError, TypeError, UnknownTaskError, SQLAlchemyError) as exc:
