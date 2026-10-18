@@ -47,6 +47,23 @@ def test_worker_claims_executes_and_finishes_task(isolated_engine: Engine) -> No
 
 
 @pytest.mark.integration
+def test_worker_runs_real_child_process(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        task_id = submit_task(session, registry, "math.add", {"left": 7, "right": 8})
+
+    worker = Worker(isolated_engine, "pytask_service.example_tasks:registry")
+    worked = worker.run_once()
+
+    assert worked is not None
+    assert worked.outcome.succeeded
+    with Session(isolated_engine) as session:
+        task = session.get(Task, task_id)
+        assert task is not None
+        assert task.status == TaskStatus.SUCCEEDED.value
+        assert task.result == 15
+
+
+@pytest.mark.integration
 def test_worker_records_handler_failure(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
         task_id = submit_task(
