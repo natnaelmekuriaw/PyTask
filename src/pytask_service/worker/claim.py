@@ -18,6 +18,9 @@ class ClaimedTask:
 
 
 def claim_next(session: Session, worker_id: str) -> ClaimedTask | None:
+    if not worker_id or len(worker_id) > 128:
+        raise ValueError("worker_id must contain 1 to 128 characters")
+
     task = session.scalar(
         select(Task)
         .where(Task.status == TaskStatus.PENDING.value)
