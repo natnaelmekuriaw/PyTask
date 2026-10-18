@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from pytask_service.cli_options import add_argument_options, add_policy_options, read_argument_text, parse_arguments, read_policy
 from pytask_service.config import Settings
+from pytask_service.cli_schedule import configure_schedule_parser, handle_schedule
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
@@ -25,6 +26,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="pytask-service")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check-db", help="Check the database connection")
+    configure_schedule_parser(commands.add_parser("schedule", help="Manage recurring schedules"))
     submit = commands.add_parser("submit", help="Queue a registered task")
     submit.add_argument("name", help="Registered task name")
     add_argument_options(submit)
@@ -48,6 +50,9 @@ def main() -> int:
         "--heartbeat-seconds", type=float, default=10, help="Lease renewal interval"
     )
     args = parser.parse_args()
+
+    if args.command == "schedule":
+        return handle_schedule(args)
 
     if args.command == "check-db":
         try:
