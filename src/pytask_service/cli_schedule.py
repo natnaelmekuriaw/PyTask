@@ -46,6 +46,7 @@ def configure_schedule_parser(parser: argparse.ArgumentParser) -> None:
     )
     add_argument_options(create)
     add_policy_options(create)
+    create.add_argument("--paused", action="store_true", help="Create without dispatching until resumed")
     listing = commands.add_parser("list", help="List schedules by name")
     listing.add_argument("--limit", type=int, default=100)
     for action in ("show", "pause", "resume"):
@@ -82,6 +83,7 @@ def handle_schedule(args: argparse.Namespace) -> int:
                         interval_seconds=args.every,
                         start_at=args.start_at,
                         policy=policy,
+                        paused=args.paused,
                     )
                     details: object = schedule_snapshot(schedule)
                 elif args.schedule_command == "list":

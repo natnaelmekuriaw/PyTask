@@ -34,6 +34,7 @@ def create_schedule(
     interval_seconds: int,
     start_at: datetime | None = None,
     policy: TaskPolicy | None = None,
+    paused: bool = False,
 ) -> Schedule:
     name = validate_schedule_name(name)
     interval_seconds = validate_interval(interval_seconds)
@@ -48,7 +49,7 @@ def create_schedule(
         arguments=arguments,
         interval_seconds=interval_seconds,
         next_run_at=when,
-        paused=False,
+        paused=paused,
         max_attempts=policy.max_attempts,
         timeout_seconds=policy.timeout_seconds,
         retry_base_seconds=policy.retry_base_seconds,
