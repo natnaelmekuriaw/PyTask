@@ -1,0 +1,33 @@
+import pytest
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
+
+from pytask_service.db.models import Task, TaskStatus
+from pytask_service.example_tasks import registry
+from pytask_service.tasks import submit_task
+from pytask_service.worker.claim import claim_next
+from pytask_service.worker.finish import finish_task
+from pytask_service.worker.outcome import TaskOutcome
+
+
+@pytest.mark.integration
+def test_successful_task_stores_result_and_finish_time(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        task_id = submit_task(session, registry, "math.add", {"left": 2, "right": 3})
+
+    with Session(isolated_engine) as session, session.begin():
+        claim = claim_next(session, "worker-one")
+    assert claim is not None
+
+    with Session(isolated_engine) as session, session.begin():
+        finish_task(session, claim, TaskOutcome.success(5))
+
+    with Session(isolated_engine) as session:
+        task = session.get(Task, task_id)
+        assert task is not None
+        assert task.status == TaskStatus.SUCCEEDED.value
+        assert task.result == 5
+        assert task.error is None
+        assert task.finished_at is not None
+        assert task.started_at is not None
+        assert task.finished_at >= task.started_at
