@@ -10,6 +10,20 @@ from pytask_service.worker.service import Worker
 
 
 @pytest.mark.integration
+def test_idle_worker_does_not_run_executor(isolated_engine: Engine) -> None:
+    def unexpected_executor(path: str, claim: object) -> TaskOutcome:
+        raise AssertionError("No task should be executed")
+
+    worker = Worker(
+        isolated_engine,
+        "pytask_service.example_tasks:registry",
+        executor=unexpected_executor,
+    )
+
+    assert worker.run_once() is None
+
+
+@pytest.mark.integration
 def test_worker_claims_executes_and_finishes_task(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
         task_id = submit_task(session, registry, "math.add", {"left": 2, "right": 3})
