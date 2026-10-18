@@ -19,3 +19,13 @@ def test_future_occurrence_is_not_due() -> None:
 
 def test_exact_boundary_is_due() -> None:
     assert due_occurrence(START, START, 60) == START
+
+
+def test_missed_occurrences_collapse_to_the_latest_due_instant() -> None:
+    now = START + timedelta(days=30, seconds=17)
+    assert due_occurrence(START, now, 60) == now - timedelta(seconds=17)
+
+
+def test_tick_latency_does_not_shift_the_schedule_cadence() -> None:
+    now = START + timedelta(seconds=125, microseconds=999)
+    assert due_occurrence(START, now, 60) == START + timedelta(seconds=120)
