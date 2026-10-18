@@ -6,8 +6,8 @@ from sqlalchemy.engine import Engine
 
 from pytask_service.api.body_limit import BodyLimitMiddleware
 from pytask_service.api.handlers import register_errors
-from pytask_service.api.resources import APIResources
 from pytask_service.api.request_logging import RequestLoggingMiddleware
+from pytask_service.api.resources import APIResources
 from pytask_service.api.routes import health, monitoring, schedules, tasks
 from pytask_service.api.schemas.errors import ErrorResponse
 from pytask_service.config import Settings

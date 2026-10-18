@@ -8,8 +8,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from pytask_service.db.models import TaskStatus
-from pytask_service.observability.events import log_event
 from pytask_service.observability.context import bind_context
+from pytask_service.observability.events import log_event
 from pytask_service.registry import load_registry
 from pytask_service.worker.claim import ClaimedTask, claim_next
 from pytask_service.worker.errors import LostClaimError
@@ -56,15 +56,23 @@ class Worker:
         with Session(self.engine) as session, session.begin():
             recovered = recover_expired(session, self.policy.recovery_batch_size)
         if recovered:
-            log_event(logger, "worker.leases_recovered", worker_id=self.worker_id,
-                      count=recovered)
+            log_event(
+                logger,
+                "worker.leases_recovered",
+                worker_id=self.worker_id,
+                count=recovered,
+            )
         with Session(self.engine) as session, session.begin():
             claim = claim_next(session, self.worker_id, self.policy.lease_seconds)
         if claim is None:
             return None
 
-        with bind_context(task_id=claim.id, attempt_id=claim.token,
-                          attempt_number=claim.attempt_number, worker_id=claim.worker_id):
+        with bind_context(
+            task_id=claim.id,
+            attempt_id=claim.token,
+            attempt_number=claim.attempt_number,
+            worker_id=claim.worker_id,
+        ):
             log_event(logger, "task.claimed")
             try:
                 return self._execute(claim)

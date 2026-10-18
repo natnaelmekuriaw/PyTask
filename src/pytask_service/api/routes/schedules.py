@@ -95,8 +95,11 @@ def change_state(schedule_id: UUID, session: SessionDep, paused: bool) -> Schedu
         result = ScheduleRead.model_validate(
             schedule_snapshot(set_paused(session, schedule_id, paused))
         )
-    log_event(logger, "schedule.paused" if paused else "schedule.resumed",
-              schedule_id=schedule_id)
+    log_event(
+        logger,
+        "schedule.paused" if paused else "schedule.resumed",
+        schedule_id=schedule_id,
+    )
     return result
 
 

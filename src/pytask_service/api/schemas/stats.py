@@ -1,7 +1,11 @@
 from datetime import datetime
 
 from pytask_service.api.schemas.base import APIModel
-from pytask_service.observability.snapshot import AttemptStats, QueueStats, ScheduleStats
+from pytask_service.observability.snapshot import (
+    AttemptStats,
+    QueueStats,
+    ScheduleStats,
+)
 
 
 class MonitoringRead(APIModel):

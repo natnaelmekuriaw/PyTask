@@ -22,13 +22,15 @@ def queue_aggregate(now: ColumnElement[datetime]) -> Subquery:
         func.count().filter(and_(ready, Task.attempt_count > 0)).label("retry_ready"),
         func.count().filter(and_(pending, ~eligible)).label("exhausted_pending"),
         func.count().filter(running).label("running"),
-        func.count().filter(
-            and_(running, Task.lease_expires_at <= now)
-        ).label("expired_running"),
-        func.count().filter(
-            and_(running, Task.lease_expires_at.is_(None))
-        ).label("unleased_running"),
-        func.count().filter(Task.status == TaskStatus.SUCCEEDED.value).label("succeeded"),
+        func.count()
+        .filter(and_(running, Task.lease_expires_at <= now))
+        .label("expired_running"),
+        func.count()
+        .filter(and_(running, Task.lease_expires_at.is_(None)))
+        .label("unleased_running"),
+        func.count()
+        .filter(Task.status == TaskStatus.SUCCEEDED.value)
+        .label("succeeded"),
         func.count().filter(Task.status == TaskStatus.FAILED.value).label("failed"),
         func.extract("epoch", now - oldest).label("oldest_ready_age_seconds"),
     ).subquery("queue")

@@ -5,11 +5,25 @@ from uuid import UUID
 
 from pytask_service.observability.context import current_context
 
-EVENT_FIELDS = frozenset({
-    "task_id", "attempt_id", "attempt_number", "worker_id", "schedule_id",
-    "request_id", "status", "count", "duration_seconds", "error_type", "method",
-    "route", "status_code", "created", "scheduled_for",
-})
+EVENT_FIELDS = frozenset(
+    {
+        "task_id",
+        "attempt_id",
+        "attempt_number",
+        "worker_id",
+        "schedule_id",
+        "request_id",
+        "status",
+        "count",
+        "duration_seconds",
+        "error_type",
+        "method",
+        "route",
+        "status_code",
+        "created",
+        "scheduled_for",
+    }
+)
 
 
 def safe_fields(fields: dict[str, object]) -> dict[str, object]:
@@ -37,7 +51,8 @@ def log_event(
         return
     try:
         logger.log(
-            level, event,
+            level,
+            event,
             extra={"event_fields": safe_fields({**current_context(), **fields})},
         )
     except Exception:

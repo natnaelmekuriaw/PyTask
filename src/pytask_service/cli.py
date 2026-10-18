@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from pytask_service.cli_monitoring import show_stats
 from pytask_service.cli_options import (
     add_argument_options,
     add_policy_options,
@@ -15,14 +16,13 @@ from pytask_service.cli_options import (
     read_argument_text,
     read_policy,
 )
-from pytask_service.cli_monitoring import show_stats
 from pytask_service.cli_schedule import configure_schedule_parser, handle_schedule
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
-from pytask_service.observability.logging import configure_logging
 from pytask_service.observability.events import log_event
+from pytask_service.observability.logging import configure_logging
 from pytask_service.observability.window import DEFAULT_WINDOW_SECONDS
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry

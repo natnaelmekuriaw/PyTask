@@ -18,7 +18,9 @@ class StderrHandler(logging.StreamHandler[TextIO]):
 def configure_logging() -> None:
     level = os.environ.get("PYTASK_LOG_LEVEL", "INFO").strip().upper()
     if level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
-        raise ValueError("PYTASK_LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL")
+        raise ValueError(
+            "PYTASK_LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL"
+        )
     logger = logging.getLogger("pytask_service")
     with _lock:
         if not any(isinstance(handler, StderrHandler) for handler in logger.handlers):

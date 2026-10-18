@@ -29,12 +29,16 @@ class RequestLoggingMiddleware:
             if message["type"] == "http.response.start":
                 status = message["status"]
                 headers = [
-                    (key, value) for key, value in message.get("headers", [])
+                    (key, value)
+                    for key, value in message.get("headers", [])
                     if key.lower() != b"x-request-id"
                 ]
                 message = {
                     **message,
-                    "headers": [*headers, (b"x-request-id", request_id.encode("ascii"))],
+                    "headers": [
+                        *headers,
+                        (b"x-request-id", request_id.encode("ascii")),
+                    ],
                 }
             await send(message)
 
@@ -49,12 +53,25 @@ class RequestLoggingMiddleware:
             finally:
                 route = getattr(scope.get("route"), "path", "unmatched")
                 method = scope.get("method", "OTHER")
-                if method not in {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}:
+                if method not in {
+                    "GET",
+                    "HEAD",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "OPTIONS",
+                }:
                     method = "OTHER"
                 log_event(
-                    logger, "http.request",
-                    level=logging.WARNING if error_type or (status or 0) >= 500 else logging.INFO,
-                    method=method, route=route, status_code=status,
+                    logger,
+                    "http.request",
+                    level=logging.WARNING
+                    if error_type or (status or 0) >= 500
+                    else logging.INFO,
+                    method=method,
+                    route=route,
+                    status_code=status,
                     duration_seconds=round(max(0.0, monotonic() - started), 6),
                     error_type=error_type,
                 )

@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 from threading import Event
 
 from pytask_service.config import Settings
