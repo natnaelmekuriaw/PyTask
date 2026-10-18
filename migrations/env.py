@@ -6,7 +6,6 @@ from pytask_service.config import Settings
 from pytask_service.db.base import Base
 from pytask_service.db.engine import build_engine
 
-
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
