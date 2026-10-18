@@ -33,3 +33,26 @@ def test_loop_finishes_current_task_before_stopping() -> None:
 
     assert loop.run() == 1
     assert observed == [worked]
+
+
+def test_idle_loop_waits_between_claims() -> None:
+    class StopAfterWait(Event):
+        def __init__(self) -> None:
+            super().__init__()
+            self.timeouts: list[float] = []
+
+        def wait(self, timeout: float | None = None) -> bool:
+            assert timeout is not None
+            self.timeouts.append(timeout)
+            self.set()
+            return True
+
+    class IdleWorker:
+        def run_once(self) -> None:
+            return None
+
+    stop = StopAfterWait()
+    loop = WorkerLoop(IdleWorker(), poll_interval=0.25, stop_event=stop)
+
+    assert loop.run() == 0
+    assert stop.timeouts == [0.25]
