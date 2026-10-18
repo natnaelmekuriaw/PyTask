@@ -1,6 +1,8 @@
 from threading import Event
 from uuid import uuid4
 
+import pytest
+
 from pytask_service.worker.loop import WorkerLoop
 from pytask_service.worker.outcome import TaskOutcome
 from pytask_service.worker.service import WorkedTask
@@ -56,3 +58,9 @@ def test_idle_loop_waits_between_claims() -> None:
 
     assert loop.run() == 0
     assert stop.timeouts == [0.25]
+
+
+@pytest.mark.parametrize("poll_interval", [0, -1, float("nan"), float("inf")])
+def test_loop_rejects_invalid_poll_interval(poll_interval: float) -> None:
+    with pytest.raises(ValueError, match="positive finite"):
+        WorkerLoop(object(), poll_interval=poll_interval)

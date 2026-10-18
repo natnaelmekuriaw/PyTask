@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 from threading import Event
 from typing import Protocol
@@ -18,8 +19,8 @@ class WorkerLoop:
         stop_event: Event | None = None,
         on_result: Callable[[WorkedTask], None] | None = None,
     ) -> None:
-        if poll_interval <= 0:
-            raise ValueError("poll_interval must be positive")
+        if not math.isfinite(poll_interval) or poll_interval <= 0:
+            raise ValueError("poll_interval must be a positive finite number")
         self.worker = worker
         self.poll_interval = poll_interval
         self.stop_event = stop_event or Event()
