@@ -104,6 +104,19 @@ def test_rollback_discards_both_task_and_cursor_changes(isolated_engine: Engine,
         assert schedule is not None
         original = schedule.next_run_at
         assert len(dispatch_due(session)) == 1
+
+
+def test_rewound_cursor_reuses_the_existing_occurrence_task(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_id = schedule_factory()
+    with Session(isolated_engine) as session, session.begin():
+        first = dispatch_due(session)[0]
+        schedule = get_schedule(session, schedule_id)
+        assert schedule is not None
+        schedule.next_run_at = first.scheduled_for
+    with Session(isolated_engine) as session, session.begin():
+        repeated = dispatch_due(session)[0]
+        assert repeated.id == first.id and not repeated.created
+        assert session.scalar(select(func.count()).select_from(Task)) == 1
         transaction.rollback()
     with Session(isolated_engine) as session, session.begin():
         schedule = get_schedule(session, schedule_id)
