@@ -11,6 +11,7 @@ from pytask_service.arguments import InvalidTaskArguments
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
+from pytask_service.monitoring import task_snapshot
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.tasks import get_task, submit_task
 from pytask_service.worker.command import run_forever, run_one
@@ -110,13 +111,7 @@ def _status(task_id: UUID) -> int:
                 if task is None:
                     print(f"Task not found: {task_id}", file=sys.stderr)
                     return 1
-                details = {
-                    "id": str(task.id),
-                    "name": task.name,
-                    "arguments": task.arguments,
-                    "status": task.status,
-                    "created_at": task.created_at.isoformat(),
-                }
+                details = task_snapshot(task)
         finally:
             engine.dispose()
     except (ValueError, SQLAlchemyError) as exc:
