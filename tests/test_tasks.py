@@ -4,6 +4,7 @@ import pytest
 
 from pytask_service.arguments import InvalidTaskArguments
 from pytask_service.db.models import Task, TaskStatus
+from pytask_service.policy import TaskPolicy
 from pytask_service.registry import TaskRegistry, UnknownTaskError
 from pytask_service.tasks import submit_task
 
@@ -58,3 +59,21 @@ def test_submit_rejects_arguments_that_do_not_bind() -> None:
 def test_submit_rejects_unregistered_task() -> None:
     with pytest.raises(UnknownTaskError, match="missing"):
         submit_task(RecordingSession(), TaskRegistry(), "missing", {})
+
+
+def test_submit_stores_explicit_retry_and_timeout_policy() -> None:
+    registry = TaskRegistry()
+    registry.register("math.add", lambda left, right: left + right)
+    session = RecordingSession()
+
+    submit_task(
+        session, registry, "math.add", {"left": 1, "right": 2},
+        policy=TaskPolicy(max_attempts=5, timeout_seconds=10, retry_base_seconds=2, retry_max_seconds=20),
+    )
+
+    assert session.task is not None
+    assert session.task.attempt_count == 0
+    assert session.task.max_attempts == 5
+    assert session.task.timeout_seconds == 10
+    assert session.task.retry_base_seconds == 2
+    assert session.task.retry_max_seconds == 20
