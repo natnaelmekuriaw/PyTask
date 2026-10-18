@@ -14,11 +14,13 @@ from pytask_service.cli_options import (
     read_argument_text,
     read_policy,
 )
+from pytask_service.cli_monitoring import show_stats
 from pytask_service.cli_schedule import configure_schedule_parser, handle_schedule
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
+from pytask_service.observability.window import DEFAULT_WINDOW_SECONDS
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.scheduling.command import run_scheduler
@@ -34,6 +36,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="pytask-service")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check-db", help="Check the database connection")
+    stats = commands.add_parser("stats", help="Show queue and execution statistics")
+    stats.add_argument("--window-seconds", type=int, default=DEFAULT_WINDOW_SECONDS)
     configure_schedule_parser(
         commands.add_parser("schedule", help="Manage recurring schedules")
     )
@@ -70,6 +74,9 @@ def main() -> int:
     scheduler.add_argument("--batch-size", type=int, default=100)
     scheduler.add_argument("--poll-interval", type=float, default=1)
     args = parser.parse_args()
+
+    if args.command == "stats":
+        return show_stats(args.window_seconds)
 
     if args.command == "schedule":
         return handle_schedule(args)
