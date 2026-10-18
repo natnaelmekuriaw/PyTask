@@ -1,12 +1,13 @@
 # PyTask
 
 PyTask is a PostgreSQL-backed task execution service for registered Python
-functions. It is being built around task claiming, retries, leases, and crash
-recovery.
+functions, with task claiming, retries, leases, and crash recovery.
 
 The current stage supports registering named functions, submitting tasks with
 JSON arguments, and running them in background worker processes. Multiple
-workers can safely claim tasks from the same PostgreSQL queue.
+workers can safely claim tasks from the same PostgreSQL queue. Failed attempts
+use configurable backoff, and expired leases allow another worker to recover
+interrupted work. Every execution attempt has its own history record.
 
 ## Requirements
 
@@ -43,6 +44,10 @@ Run the checks with:
 
 The PostgreSQL integration tests run when `PYTASK_DATABASE_URL` is set and skip
 otherwise. Run `alembic upgrade head` before the full test suite.
+
+If upgrading an existing worker-engine checkout, stop all workers before
+running the migration. Follow the [reliability upgrade guide](docs/reliability-upgrade.md)
+for the migration checks and retry/timeout examples.
 
 ## Submit a task
 
@@ -86,6 +91,18 @@ Set `PYTASK_REGISTRY` to that module and attribute, such as
 the function signature and stores its name and arguments; it does not call the
 function.
 
+Each task defaults to three total attempts and a 300-second execution timeout.
+Use submission flags to change its policy:
+
+```powershell
+.\.venv\Scripts\pytask-service submit math.add --args-file examples/math-add.json --max-attempts 5 --timeout 30 --retry-base 2 --retry-max 60
+```
+
+`--max-attempts` includes the first execution. Set it to `1` for a single
+attempt. Retry delays use exponential backoff with full jitter. Handlers must
+tolerate repeated execution; see the [reliability contract](docs/reliability.md)
+for idempotency guidance.
+
 ## Run a worker
 
 After submitting a task, process one queued task:
@@ -106,11 +123,23 @@ $env:PYTASK_REGISTRY = "pytask_service.example_tasks:registry"
 Start the same command in another window to run a second worker. Each worker
 claims one task at a time. Press Ctrl+C to stop claiming new tasks; the worker
 waits for its current task to finish. Use `worker --poll-interval 1` to change
-the idle polling interval in seconds.
+the idle polling interval in seconds. The worker renews its current lease
+during graceful shutdown.
 
-The `status` command shows the current state, worker ID, result or error, and
-execution duration. Successful results must be JSON values no larger than
-64 KiB. A handler exception marks the task as failed.
+Workers use a 30-second lease and renew it every 10 seconds. Override them with
+`--lease-seconds` and `--heartbeat-seconds`; the heartbeat interval must be at
+most one third of the lease duration. `worker --once` processes at most one
+eligible task, so it does not wait for future retries to become due.
+
+The `status` command shows the current state, worker ID, result or error,
+attempt count, next eligible time, and lease expiry. Successful results must
+be JSON values no larger than 64 KiB. A handler exception or timeout returns
+the task to `pending` when attempts remain, or marks it `failed` when its
+budget is exhausted. Inspect the execution history with:
+
+```powershell
+.\.venv\Scripts\pytask-service attempts "PASTE_TASK_ID_HERE"
+```
 
 See [Worker design](docs/worker-design.md) for claim, process, and finalization
 details.
@@ -118,13 +147,9 @@ details.
 ## Planned milestones
 
 1. Register and submit named tasks with JSON arguments. **Implemented.**
-2. Claim and run tasks across multiple workers. **Current stage.**
-3. Add retries, leases, crash recovery, and timeouts.
+2. Claim and run tasks across multiple workers. **Implemented.**
+3. Add retries, leases, crash recovery, and timeouts. **Current stage.**
 4. Add delayed and recurring scheduling.
 5. Expose submission and monitoring through an API.
-
-This stage does not yet recover a task left `running` when its worker crashes.
-The reliability stage will add leases, recovery, retries, and an at-least-once
-delivery contract. Task handlers should be safe to run more than once.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.

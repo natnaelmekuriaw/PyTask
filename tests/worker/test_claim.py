@@ -59,6 +59,7 @@ def test_oldest_pending_task_is_claimed_first(isolated_engine: Engine) -> None:
         older = session.get(Task, older_id)
         assert older is not None
         older.created_at = datetime.now(UTC) - timedelta(days=1)
+        older.available_at = older.created_at
 
     with Session(isolated_engine) as session, session.begin():
         claim = claim_next(session, "worker-one")

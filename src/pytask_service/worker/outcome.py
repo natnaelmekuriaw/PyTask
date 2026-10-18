@@ -11,6 +11,7 @@ class TaskOutcome:
     succeeded: bool
     result: object | None = None
     error: str | None = None
+    timed_out: bool = False
 
     @classmethod
     def success(cls, value: object) -> "TaskOutcome":
@@ -34,4 +35,12 @@ class TaskOutcome:
         return cls(
             succeeded=False,
             error=f"Task process exited without a result (exit code {exit_code})",
+        )
+
+    @classmethod
+    def timeout(cls, seconds: float) -> "TaskOutcome":
+        return cls(
+            succeeded=False,
+            error=f"Execution exceeded {seconds:g} seconds",
+            timed_out=True,
         )

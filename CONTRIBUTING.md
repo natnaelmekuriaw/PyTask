@@ -26,6 +26,18 @@ concurrency matters. Keep the claim transaction short and run task handlers
 outside it. Check child-process behavior on Windows as well as Linux when
 changing process execution or shutdown.
 
+For reliability changes, cover lease expiry and stale claim tokens as well as
+successful execution. Reusing a worker ID must not let an old attempt renew or
+finish a new one. Check retry exhaustion, timeout cleanup, and attempt history
+when changing task transitions. Expire stored leases directly in integration
+tests instead of waiting for wall-clock expiry; use bounded waits when the
+process or heartbeat behavior itself is under test.
+
+See the [worker design](docs/worker-design.md) for transaction boundaries and
+the [reliability contract](docs/reliability.md) for delivery semantics. Stop
+workers before schema upgrades; the [upgrade guide](docs/reliability-upgrade.md)
+includes migration checks and examples.
+
 Use `feat/short-name` for feature branches and `fix/short-name` for fixes.
 Keep commits focused and describe the change in a short subject line.
 

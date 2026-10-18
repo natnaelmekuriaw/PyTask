@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from pytask_service.db.models import Task, TaskStatus
 from pytask_service.example_tasks import registry
+from pytask_service.policy import TaskPolicy
 from pytask_service.tasks import submit_task
 from pytask_service.worker.claim import claim_next
 from pytask_service.worker.finish import LostClaimError, finish_task
@@ -37,7 +38,11 @@ def test_successful_task_stores_result_and_finish_time(isolated_engine: Engine) 
 def test_failed_task_stores_error(isolated_engine: Engine) -> None:
     with Session(isolated_engine) as session, session.begin():
         task_id = submit_task(
-            session, registry, "demo.fail", {"message": "expected failure"}
+            session,
+            registry,
+            "demo.fail",
+            {"message": "expected failure"},
+            policy=TaskPolicy(max_attempts=1),
         )
 
     with Session(isolated_engine) as session, session.begin():
