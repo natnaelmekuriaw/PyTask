@@ -11,6 +11,7 @@ from pytask_service.db.clock import database_now
 from pytask_service.db.models import Schedule, Task
 from pytask_service.scheduling.dispatch import dispatch_due
 from pytask_service.scheduling.definitions import get_schedule, list_occurrences
+from pytask_service.policy import TaskPolicy
 
 pytestmark = pytest.mark.integration
 
@@ -59,3 +60,11 @@ def test_repeated_ticks_do_not_enqueue_the_same_occurrence(isolated_engine: Engi
     with Session(isolated_engine) as session, session.begin():
         assert dispatch_due(session) == []
         assert session.scalar(select(func.count()).select_from(Task)) == len(first) == 1
+
+
+def test_each_occurrence_copies_its_schedule_policy(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_factory(policy=TaskPolicy(7, 15, 2, 30))
+    with Session(isolated_engine) as session, session.begin():
+        task = session.get(Task, dispatch_due(session)[0].id)
+        assert task is not None
+        assert (task.max_attempts, task.timeout_seconds, task.retry_base_seconds, task.retry_max_seconds) == (7, 15, 2, 30)
