@@ -25,3 +25,7 @@ def test_api_index_upgrade_preserves_tasks_and_matches_metadata(isolated_engine:
         command.check(config)
         assert connection.scalar(select(Task.id).where(Task.id == task_id)) == task_id
         assert "ix_tasks_created_id" in {index["name"] for index in inspect(connection).get_indexes("tasks")}
+        command.downgrade(config, "20261018_05")
+        assert "ix_tasks_created_id" not in {index["name"] for index in inspect(connection).get_indexes("tasks")}
+        assert connection.scalar(select(Task.id).where(Task.id == task_id)) == task_id
+        assert {"tasks", "task_attempts", "schedules"} <= set(inspect(connection).get_table_names())
