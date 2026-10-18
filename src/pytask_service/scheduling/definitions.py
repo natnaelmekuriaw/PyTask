@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from pytask_service.db.clock import database_now
-from pytask_service.db.models import Schedule
+from pytask_service.db.models import Schedule, Task
 from pytask_service.db.transactions import bound_transaction
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import TaskRegistry
@@ -85,3 +85,9 @@ def set_paused(session: Session, schedule_id: UUID, paused: bool) -> Schedule:
         schedule.updated_at = database_now(session)
         session.flush()
     return schedule
+
+
+def list_occurrences(session: Session, schedule_id: UUID, *, limit: int = 100) -> list[Task]:
+    if type(limit) is not int or not 1 <= limit <= 1000:
+        raise ValueError("Limit must be an integer from 1 to 1000")
+    return list(session.scalars(select(Task).where(Task.schedule_id == schedule_id).order_by(Task.scheduled_for.desc(), Task.id).limit(limit)))
