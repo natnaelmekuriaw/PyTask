@@ -132,3 +132,7 @@ class Schedule(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     last_scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
+    timeout_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=300, server_default="300")
+    retry_base_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=1, server_default="1")
+    retry_max_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=60, server_default="60")
