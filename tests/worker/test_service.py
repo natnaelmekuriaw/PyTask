@@ -53,3 +53,28 @@ def test_worker_records_handler_failure(isolated_engine: Engine) -> None:
         assert task is not None
         assert task.status == TaskStatus.FAILED.value
         assert task.error is not None
+
+
+@pytest.mark.integration
+def test_worker_records_executor_error(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        task_id = submit_task(session, registry, "math.add", {"left": 1, "right": 2})
+
+    def broken_executor(path: str, claim: object) -> TaskOutcome:
+        raise OSError("process launch failed")
+
+    worker = Worker(
+        isolated_engine,
+        "pytask_service.example_tasks:registry",
+        executor=broken_executor,
+    )
+    worked = worker.run_once()
+
+    assert worked is not None
+    assert not worked.outcome.succeeded
+    with Session(isolated_engine) as session:
+        task = session.get(Task, task_id)
+        assert task is not None
+        assert task.status == TaskStatus.FAILED.value
+        assert task.error is not None
+        assert "process launch failed" in task.error
