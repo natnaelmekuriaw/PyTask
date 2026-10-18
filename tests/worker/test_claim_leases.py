@@ -38,3 +38,20 @@ def test_claim_waits_until_retry_is_due(isolated_engine: Engine) -> None:
         task.available_at = database_now(session) + timedelta(hours=1)
     with Session(isolated_engine) as session, session.begin():
         assert claim_next(session, "worker-one") is None
+
+
+@pytest.mark.integration
+def test_rolled_back_claim_does_not_consume_an_attempt(isolated_engine: Engine) -> None:
+    with Session(isolated_engine) as session, session.begin():
+        submit_task(session, registry, "math.add", {"left": 1, "right": 2})
+    with Session(isolated_engine) as session:
+        first = claim_next(session, "worker-one")
+        session.rollback()
+    with Session(isolated_engine) as session, session.begin():
+        second = claim_next(session, "worker-two")
+    assert first is not None and second is not None
+    assert first.token != second.token
+    assert second.attempt_number == 1
+    with Session(isolated_engine) as session:
+        assert session.get(TaskAttempt, first.token) is None
+        assert session.get(TaskAttempt, second.token) is not None
