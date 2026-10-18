@@ -53,3 +53,16 @@ def test_expired_final_attempt_is_terminal(isolated_engine: Engine) -> None:
         assert task is not None
         assert task.status == TaskStatus.FAILED.value
         assert task.finished_at is not None
+
+
+@pytest.mark.integration
+def test_recovery_workers_skip_each_others_locked_batch(isolated_engine: Engine) -> None:
+    expired_claim(isolated_engine)
+    expired_claim(isolated_engine)
+
+    with Session(isolated_engine) as first, first.begin():
+        assert recover_expired(first, batch_size=1) == 1
+        with Session(isolated_engine) as second, second.begin():
+            assert recover_expired(second, batch_size=1) == 1
+    with Session(isolated_engine) as session, session.begin():
+        assert recover_expired(session) == 0
