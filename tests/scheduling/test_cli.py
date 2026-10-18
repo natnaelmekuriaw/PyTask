@@ -41,3 +41,10 @@ def test_scheduler_cli_dispatches_without_loading_a_registry(invoke: Callable[..
     assert report["created"] is True and report["schedule_id"] == created["id"]
     history = invoke("schedule", "history", created["id"])
     assert len(history) == 1 and history[0]["id"] == report["id"]
+
+
+def test_duplicate_schedule_names_have_a_clear_cli_error(invoke: Callable[..., object], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    invoke("schedule", "create", "report", "math.add", "--every", "60", "--args", '{"left": 1, "right": 2}')
+    monkeypatch.setattr(sys, "argv", ["pytask-service", "schedule", "create", "report", "math.add", "--every", "60", "--args", '{"left": 1, "right": 2}'])
+    assert cli.main() == 1
+    assert capsys.readouterr().err.strip() == "Schedule name already exists"
