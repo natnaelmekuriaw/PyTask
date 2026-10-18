@@ -6,6 +6,8 @@ from pytask_service.registry import TaskRegistry, UnknownTaskError
 from pytask_service.scheduling.definitions import (
     create_schedule,
     validate_schedule_name,
+    list_schedules,
+    list_occurrences,
 )
 
 
@@ -20,6 +22,15 @@ def test_unknown_handlers_are_rejected_before_database_access() -> None:
         create_schedule(
             None, TaskRegistry(), "example", "missing", {}, interval_seconds=60
         )
+
+
+@pytest.mark.parametrize("limit", [0, -1, True, 1001])
+def test_listing_rejects_unbounded_or_invalid_limits(limit: int) -> None:
+    from uuid import uuid4
+    with pytest.raises(ValueError, match="Limit"):
+        list_schedules(None, limit=limit)
+    with pytest.raises(ValueError, match="Limit"):
+        list_occurrences(None, uuid4(), limit=limit)
 
 
 def test_schedule_start_must_be_timezone_aware() -> None:
