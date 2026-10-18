@@ -1,6 +1,6 @@
 import inspect
-from uuid import UUID, uuid4
 from datetime import datetime
+from uuid import UUID, uuid4
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session

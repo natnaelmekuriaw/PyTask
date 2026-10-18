@@ -3,8 +3,8 @@ from enum import StrEnum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    CheckConstraint,
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -32,8 +32,13 @@ class TaskStatus(StrEnum):
 class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
-        UniqueConstraint("schedule_id", "scheduled_for", name="uq_tasks_schedule_occurrence"),
-        CheckConstraint("(schedule_id IS NULL) = (scheduled_for IS NULL)", name="ck_tasks_schedule_origin"),
+        UniqueConstraint(
+            "schedule_id", "scheduled_for", name="uq_tasks_schedule_occurrence"
+        ),
+        CheckConstraint(
+            "(schedule_id IS NULL) = (scheduled_for IS NULL)",
+            name="ck_tasks_schedule_origin",
+        ),
         CheckConstraint(
             "max_attempts BETWEEN 1 AND 1000", name="ck_tasks_max_attempts"
         ),
@@ -86,7 +91,9 @@ class Task(Base):
     )
     claim_token: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True))
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    schedule_id: Mapped[UUID | None] = mapped_column(ForeignKey("schedules.id", name="fk_tasks_schedule_id", ondelete="RESTRICT"))
+    schedule_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("schedules.id", name="fk_tasks_schedule_id", ondelete="RESTRICT")
+    )
     scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
@@ -127,24 +134,49 @@ class Schedule(Base):
     __tablename__ = "schedules"
     __table_args__ = (
         UniqueConstraint("name", name="uq_schedules_name"),
-        CheckConstraint("interval_seconds BETWEEN 1 AND 31536000", name="ck_schedules_interval"),
-        CheckConstraint("max_attempts BETWEEN 1 AND 1000", name="ck_schedules_max_attempts"),
+        CheckConstraint(
+            "interval_seconds BETWEEN 1 AND 31536000", name="ck_schedules_interval"
+        ),
+        CheckConstraint(
+            "max_attempts BETWEEN 1 AND 1000", name="ck_schedules_max_attempts"
+        ),
         CheckConstraint("timeout_seconds > 0", name="ck_schedules_timeout"),
-        CheckConstraint("retry_base_seconds > 0 AND retry_max_seconds >= retry_base_seconds", name="ck_schedules_retry_delays"),
+        CheckConstraint(
+            "retry_base_seconds > 0 AND retry_max_seconds >= retry_base_seconds",
+            name="ck_schedules_retry_delays",
+        ),
         Index("ix_schedules_due", "paused", "next_run_at", "id"),
     )
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     task_name: Mapped[str] = mapped_column(String(128), nullable=False)
     arguments: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
     interval_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
-    next_run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    paused: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    next_run_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    paused: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     last_scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
-    timeout_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=300, server_default="300")
-    retry_base_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=1, server_default="1")
-    retry_max_seconds: Mapped[float] = mapped_column(Float, nullable=False, default=60, server_default="60")
+    max_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=3, server_default="3"
+    )
+    timeout_seconds: Mapped[float] = mapped_column(
+        Float, nullable=False, default=300, server_default="300"
+    )
+    retry_base_seconds: Mapped[float] = mapped_column(
+        Float, nullable=False, default=1, server_default="1"
+    )
+    retry_max_seconds: Mapped[float] = mapped_column(
+        Float, nullable=False, default=60, server_default="60"
+    )

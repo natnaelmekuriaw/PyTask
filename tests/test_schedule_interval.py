@@ -2,7 +2,11 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from pytask_service.scheduling.interval import due_occurrence, next_occurrence, validate_interval
+from pytask_service.scheduling.interval import (
+    due_occurrence,
+    next_occurrence,
+    validate_interval,
+)
 
 START = datetime(2026, 10, 18, 12, tzinfo=UTC)
 

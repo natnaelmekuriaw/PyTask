@@ -12,7 +12,10 @@ class TaskScheduler(Protocol):
 
 class SchedulerLoop:
     def __init__(
-        self, scheduler: TaskScheduler, *, policy: SchedulerPolicy | None = None,
+        self,
+        scheduler: TaskScheduler,
+        *,
+        policy: SchedulerPolicy | None = None,
         stop_event: Event | None = None,
         on_result: Callable[[ScheduledTask], None] | None = None,
     ) -> None:

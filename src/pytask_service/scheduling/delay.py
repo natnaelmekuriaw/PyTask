@@ -9,7 +9,11 @@ from pytask_service.scheduling.time import as_utc
 
 
 def validate_delay(seconds: float) -> float:
-    if isinstance(seconds, bool) or not math.isfinite(seconds) or not 0 <= seconds <= MAX_INTERVAL_SECONDS:
+    if (
+        isinstance(seconds, bool)
+        or not math.isfinite(seconds)
+        or not 0 <= seconds <= MAX_INTERVAL_SECONDS
+    ):
         raise ValueError("Delay must be between 0 and 31536000 seconds")
     return seconds
 

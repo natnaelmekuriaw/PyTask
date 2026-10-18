@@ -12,10 +12,22 @@ from pytask_service.worker.signals import stop_on_signals
 
 
 def report(task: ScheduledTask) -> None:
-    print(json.dumps({"id": str(task.id), "schedule_id": str(task.schedule_id), "scheduled_for": task.scheduled_for.isoformat(), "created": task.created}), flush=True)
+    print(
+        json.dumps(
+            {
+                "id": str(task.id),
+                "schedule_id": str(task.schedule_id),
+                "scheduled_for": task.scheduled_for.isoformat(),
+                "created": task.created,
+            }
+        ),
+        flush=True,
+    )
 
 
-def run_scheduler(settings: Settings, *, once: bool = False, policy: SchedulerPolicy | None = None) -> int:
+def run_scheduler(
+    settings: Settings, *, once: bool = False, policy: SchedulerPolicy | None = None
+) -> int:
     policy = policy or SchedulerPolicy()
     engine = build_engine(settings)
     try:
@@ -30,7 +42,9 @@ def run_scheduler(settings: Settings, *, once: bool = False, policy: SchedulerPo
                     print("No due schedules", file=sys.stderr)
             else:
                 print("Scheduler started", file=sys.stderr, flush=True)
-                SchedulerLoop(scheduler, policy=policy, stop_event=stopped, on_result=report).run()
+                SchedulerLoop(
+                    scheduler, policy=policy, stop_event=stopped, on_result=report
+                ).run()
                 print("Scheduler stopped", file=sys.stderr, flush=True)
         return 0
     finally:

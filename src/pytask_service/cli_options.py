@@ -8,15 +8,25 @@ from pytask_service.policy import TaskPolicy
 
 def add_argument_options(parser: argparse.ArgumentParser) -> None:
     options = parser.add_mutually_exclusive_group()
-    options.add_argument("--args", default="{}", help="JSON object of keyword arguments")
+    options.add_argument(
+        "--args", default="{}", help="JSON object of keyword arguments"
+    )
     options.add_argument("--args-file", type=Path, help="Read arguments from JSON")
 
 
 def add_policy_options(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--max-attempts", type=int, default=3, help="Total attempts including the first")
-    parser.add_argument("--timeout", type=float, default=300, help="Execution deadline in seconds")
-    parser.add_argument("--retry-base", type=float, default=1, help="Initial retry backoff in seconds")
-    parser.add_argument("--retry-max", type=float, default=60, help="Maximum retry backoff in seconds")
+    parser.add_argument(
+        "--max-attempts", type=int, default=3, help="Total attempts including the first"
+    )
+    parser.add_argument(
+        "--timeout", type=float, default=300, help="Execution deadline in seconds"
+    )
+    parser.add_argument(
+        "--retry-base", type=float, default=1, help="Initial retry backoff in seconds"
+    )
+    parser.add_argument(
+        "--retry-max", type=float, default=60, help="Maximum retry backoff in seconds"
+    )
 
 
 def read_argument_text(args: argparse.Namespace) -> str:

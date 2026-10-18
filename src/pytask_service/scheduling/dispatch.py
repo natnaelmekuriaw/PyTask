@@ -13,8 +13,12 @@ def dispatch_due(session: Session, *, batch_size: int = 100) -> list[ScheduledTa
     SchedulerPolicy(batch_size=batch_size)
     bound_transaction(session)
     schedules = session.scalars(
-        select(Schedule).where(Schedule.paused.is_(False), Schedule.next_run_at <= func.clock_timestamp())
-        .order_by(Schedule.next_run_at, Schedule.id).limit(batch_size)
+        select(Schedule)
+        .where(
+            Schedule.paused.is_(False), Schedule.next_run_at <= func.clock_timestamp()
+        )
+        .order_by(Schedule.next_run_at, Schedule.id)
+        .limit(batch_size)
         .with_for_update(skip_locked=True)
     ).all()
     if not schedules:
@@ -22,7 +26,9 @@ def dispatch_due(session: Session, *, batch_size: int = 100) -> list[ScheduledTa
     now = database_now(session)
     tasks = []
     for schedule in schedules:
-        occurrence = due_occurrence(schedule.next_run_at, now, schedule.interval_seconds)
+        occurrence = due_occurrence(
+            schedule.next_run_at, now, schedule.interval_seconds
+        )
         if occurrence is None:
             continue
         following = next_occurrence(occurrence, schedule.interval_seconds)

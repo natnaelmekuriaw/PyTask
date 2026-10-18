@@ -7,18 +7,24 @@ from uuid import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from pytask_service.cli_options import add_argument_options, add_policy_options, read_argument_text, parse_arguments, read_policy
-from pytask_service.config import Settings
+from pytask_service.cli_options import (
+    add_argument_options,
+    add_policy_options,
+    parse_arguments,
+    read_argument_text,
+    read_policy,
+)
 from pytask_service.cli_schedule import configure_schedule_parser, handle_schedule
+from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
-from pytask_service.scheduling.time import parse_timestamp
-from pytask_service.scheduling.delay import validate_delay
 from pytask_service.scheduling.command import run_scheduler
+from pytask_service.scheduling.delay import validate_delay
 from pytask_service.scheduling.policy import SchedulerPolicy
+from pytask_service.scheduling.time import parse_timestamp
 from pytask_service.tasks import get_task, list_attempts, submit_task
 from pytask_service.worker.command import run_forever, run_one
 from pytask_service.worker.policy import WorkerPolicy
@@ -28,14 +34,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="pytask-service")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check-db", help="Check the database connection")
-    configure_schedule_parser(commands.add_parser("schedule", help="Manage recurring schedules"))
+    configure_schedule_parser(
+        commands.add_parser("schedule", help="Manage recurring schedules")
+    )
     submit = commands.add_parser("submit", help="Queue a registered task")
     submit.add_argument("name", help="Registered task name")
     add_argument_options(submit)
     add_policy_options(submit)
     timing = submit.add_mutually_exclusive_group()
-    timing.add_argument("--run-at", type=parse_timestamp, help="ISO 8601 timestamp with UTC offset")
-    timing.add_argument("--delay", type=float, help="Seconds before the task becomes eligible")
+    timing.add_argument(
+        "--run-at", type=parse_timestamp, help="ISO 8601 timestamp with UTC offset"
+    )
+    timing.add_argument(
+        "--delay", type=float, help="Seconds before the task becomes eligible"
+    )
     status = commands.add_parser("status", help="Show a task's current status")
     status.add_argument("id", type=UUID, help="Task ID")
     attempts = commands.add_parser("attempts", help="Show execution attempt history")
@@ -52,7 +64,9 @@ def main() -> int:
         "--heartbeat-seconds", type=float, default=10, help="Lease renewal interval"
     )
     scheduler = commands.add_parser("scheduler", help="Enqueue due recurring tasks")
-    scheduler.add_argument("--once", action="store_true", help="Dispatch at most one batch")
+    scheduler.add_argument(
+        "--once", action="store_true", help="Dispatch at most one batch"
+    )
     scheduler.add_argument("--batch-size", type=int, default=100)
     scheduler.add_argument("--poll-interval", type=float, default=1)
     args = parser.parse_args()
@@ -61,8 +75,10 @@ def main() -> int:
         return handle_schedule(args)
     if args.command == "scheduler":
         try:
-            policy = SchedulerPolicy(args.batch_size, args.poll_interval)
-            return run_scheduler(Settings.from_env(), once=args.once, policy=policy)
+            scheduler_policy = SchedulerPolicy(args.batch_size, args.poll_interval)
+            return run_scheduler(
+                Settings.from_env(), once=args.once, policy=scheduler_policy
+            )
         except (ValueError, TypeError, RuntimeError, SQLAlchemyError) as error:
             print(f"Scheduler failed: {error}", file=sys.stderr)
             return 1
@@ -93,7 +109,9 @@ def main() -> int:
         except ValueError as exc:
             print(f"Task submission failed: {exc}", file=sys.stderr)
             return 1
-        return _submit(args.name, raw_arguments, policy, run_at=args.run_at, delay=args.delay)
+        return _submit(
+            args.name, raw_arguments, policy, run_at=args.run_at, delay=args.delay
+        )
     if args.command == "status":
         return _inspect_task(args.id, history=False)
     if args.command == "attempts":
@@ -113,8 +131,12 @@ def main() -> int:
 
 
 def _submit(
-    name: str, raw_arguments: str, policy: TaskPolicy | None = None,
-    *, run_at: datetime | None = None, delay: float | None = None,
+    name: str,
+    raw_arguments: str,
+    policy: TaskPolicy | None = None,
+    *,
+    run_at: datetime | None = None,
+    delay: float | None = None,
 ) -> int:
     try:
         settings = Settings.from_env()
@@ -126,7 +148,15 @@ def _submit(
         engine = build_engine(settings)
         try:
             with Session(engine) as session, session.begin():
-                task_id = submit_task(session, registry, name, arguments, policy=policy, run_at=run_at, delay=delay)
+                task_id = submit_task(
+                    session,
+                    registry,
+                    name,
+                    arguments,
+                    policy=policy,
+                    run_at=run_at,
+                    delay=delay,
+                )
         finally:
             engine.dispose()
     except (ValueError, TypeError, UnknownTaskError, SQLAlchemyError) as exc:
