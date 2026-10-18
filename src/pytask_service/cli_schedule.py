@@ -29,3 +29,40 @@ def configure_schedule_parser(parser: argparse.ArgumentParser) -> None:
     for action in ("show", "pause", "resume"):
         command = commands.add_parser(action, help=f"{action.capitalize()} a schedule")
         command.add_argument("id", type=UUID)
+
+
+def handle_schedule(args: argparse.Namespace) -> int:
+    try:
+        settings = Settings.from_env()
+        registry = None
+        arguments: object = None
+        policy = None
+        if args.schedule_command == "create":
+            if settings.registry_path is None:
+                raise ValueError("PYTASK_REGISTRY is required for schedule creation")
+            registry = load_registry(settings.registry_path)
+            arguments = parse_arguments(read_argument_text(args))
+            policy = read_policy(args)
+        engine = build_engine(settings)
+        try:
+            with Session(engine) as session, session.begin():
+                if args.schedule_command == "create":
+                    assert registry is not None
+                    schedule = create_schedule(session, registry, args.name, args.task_name, arguments, interval_seconds=args.every, start_at=args.start_at, policy=policy)
+                    details: object = schedule_snapshot(schedule)
+                elif args.schedule_command == "list":
+                    details = [schedule_snapshot(item) for item in list_schedules(session, limit=args.limit)]
+                elif args.schedule_command in ("pause", "resume"):
+                    details = schedule_snapshot(set_paused(session, args.id, args.schedule_command == "pause"))
+                else:
+                    schedule = get_schedule(session, args.id)
+                    if schedule is None:
+                        raise ValueError(f"Schedule not found: {args.id}")
+                    details = schedule_snapshot(schedule)
+        finally:
+            engine.dispose()
+    except (ValueError, TypeError, OSError, UnicodeError, UnknownTaskError, SQLAlchemyError) as error:
+        print(f"Schedule command failed: {error}", file=sys.stderr)
+        return 1
+    print(json.dumps(details))
+    return 0
