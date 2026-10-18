@@ -17,7 +17,8 @@ def run_one(settings: Settings) -> int:
     engine = build_engine(settings)
     try:
         worker = Worker(engine, settings.registry_path)
-        worked = worker.run_once()
+        with stop_on_signals(Event()):
+            worked = worker.run_once()
         if worked is None:
             print("No pending tasks")
             return 0
