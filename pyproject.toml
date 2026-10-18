@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytask-service"
+version = "0.1.0"
+description = "A PostgreSQL-backed task execution service"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dependencies = [
+    "alembic>=1.14,<2",
+    "psycopg[binary]>=3.2,<4",
+    "SQLAlchemy>=2.0,<3",
+]
+
+[project.scripts]
+pytask-service = "pytask_service.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.15,<2",
+    "pytest>=8.3,<9",
+    "ruff>=0.11,<1",
+]
+
+[project.urls]
+Repository = "https://github.com/natnaelmekuriaw/PyTask"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: requires a running PostgreSQL instance"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+strict = true
