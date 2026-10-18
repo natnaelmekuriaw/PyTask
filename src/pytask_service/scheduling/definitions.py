@@ -50,3 +50,14 @@ def list_schedules(session: Session, *, limit: int = 100) -> list[Schedule]:
     if type(limit) is not int or not 1 <= limit <= 1000:
         raise ValueError("Limit must be an integer from 1 to 1000")
     return list(session.scalars(select(Schedule).order_by(Schedule.name, Schedule.id).limit(limit)))
+
+
+def set_paused(session: Session, schedule_id: UUID, paused: bool) -> Schedule:
+    schedule = session.scalar(select(Schedule).where(Schedule.id == schedule_id).with_for_update())
+    if schedule is None:
+        raise ValueError(f"Schedule not found: {schedule_id}")
+    if schedule.paused != paused:
+        schedule.paused = paused
+        schedule.updated_at = database_now(session)
+        session.flush()
+    return schedule
