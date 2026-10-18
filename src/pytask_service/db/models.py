@@ -19,6 +19,12 @@ class TaskStatus(StrEnum):
 
 class Task(Base):
     __tablename__ = "tasks"
+    __table_args__ = (
+        CheckConstraint("max_attempts BETWEEN 1 AND 1000", name="ck_tasks_max_attempts"),
+        CheckConstraint("attempt_count BETWEEN 0 AND max_attempts", name="ck_tasks_attempt_count"),
+        CheckConstraint("timeout_seconds > 0", name="ck_tasks_timeout"),
+        CheckConstraint("retry_base_seconds > 0 AND retry_max_seconds >= retry_base_seconds", name="ck_tasks_retry_delays"),
+    )
 
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4
@@ -51,7 +57,8 @@ class Task(Base):
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
-Index("ix_tasks_status_created_id", Task.status, Task.created_at, Task.id)
+Index("ix_tasks_ready", Task.status, Task.available_at, Task.created_at, Task.id)
+Index("ix_tasks_expired", Task.status, Task.lease_expires_at, Task.id)
 
 
 class AttemptStatus(StrEnum):
