@@ -1,6 +1,7 @@
 from uuid import UUID
+from typing import Annotated
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, Query
 
 from pytask_service.api.dependencies import ResourcesDep, SessionDep
 from pytask_service.api.errors import APIError
@@ -8,8 +9,17 @@ from pytask_service.api.schemas.monitoring import ScheduleRead
 from pytask_service.api.schemas.schedules import ScheduleCreate
 from pytask_service.scheduling.definitions import create_schedule, get_schedule
 from pytask_service.scheduling.monitoring import schedule_snapshot
+from pytask_service.api.schedule_queries import schedule_page
+from pytask_service.api.schemas.pages import Page
 
 router = APIRouter(prefix="/schedules", tags=["Schedules"])
+
+
+@router.get("", response_model=Page[ScheduleRead], summary="List recurring schedules")
+def listing(session: SessionDep, limit: Annotated[int, Query(ge=1, le=100)] = 50, cursor: Annotated[str | None, Query(max_length=1024)] = None, paused: bool | None = None, task_name: Annotated[str | None, Query(min_length=1, max_length=128)] = None) -> Page[ScheduleRead]:
+    with session.begin():
+        page = schedule_page(session, limit=limit, cursor=cursor, paused=paused, task_name=task_name)
+        return Page(items=[ScheduleRead.model_validate(schedule_snapshot(item)) for item in page.items], next_cursor=page.next_cursor)
 
 
 @router.post("", status_code=201, response_model=ScheduleRead, summary="Create a recurring schedule")
