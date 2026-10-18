@@ -99,6 +99,10 @@ class Task(Base):
 
 Index("ix_tasks_ready", Task.status, Task.available_at, Task.created_at, Task.id)
 Index("ix_tasks_expired", Task.status, Task.lease_expires_at, Task.id)
+Index("ix_tasks_created_id", Task.created_at, Task.id)
+Index("ix_tasks_status_created_id", Task.status, Task.created_at, Task.id)
+Index("ix_tasks_schedule_created_id", Task.schedule_id, Task.created_at, Task.id)
+Index("ix_tasks_name_created_id", Task.name, Task.created_at, Task.id)
 
 
 class AttemptStatus(StrEnum):
@@ -133,6 +137,7 @@ class TaskAttempt(Base):
 class Schedule(Base):
     __tablename__ = "schedules"
     __table_args__ = (
+        Index("ix_schedules_created_id", "created_at", "id"),
         UniqueConstraint("name", name="uq_schedules_name"),
         CheckConstraint(
             "interval_seconds BETWEEN 1 AND 31536000", name="ck_schedules_interval"
