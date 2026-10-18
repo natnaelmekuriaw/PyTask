@@ -7,7 +7,7 @@ from pytask_service.api.dependencies import ResourcesDep, SessionDep
 from pytask_service.api.errors import APIError
 from pytask_service.api.schemas.monitoring import ScheduleRead
 from pytask_service.api.schemas.schedules import ScheduleCreate
-from pytask_service.scheduling.definitions import create_schedule, get_schedule
+from pytask_service.scheduling.definitions import create_schedule, get_schedule, set_paused
 from pytask_service.scheduling.monitoring import schedule_snapshot
 from pytask_service.api.schedule_queries import schedule_page
 from pytask_service.api.schemas.pages import Page
@@ -38,3 +38,18 @@ def read(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
         if schedule is None:
             raise APIError(404, "schedule_not_found", "Schedule not found")
         return ScheduleRead.model_validate(schedule_snapshot(schedule))
+
+
+def change_state(schedule_id: UUID, session: SessionDep, paused: bool) -> ScheduleRead:
+    with session.begin():
+        return ScheduleRead.model_validate(schedule_snapshot(set_paused(session, schedule_id, paused)))
+
+
+@router.post("/{schedule_id}/pause", response_model=ScheduleRead, summary="Pause future dispatches")
+def pause(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
+    return change_state(schedule_id, session, True)
+
+
+@router.post("/{schedule_id}/resume", response_model=ScheduleRead, summary="Resume dispatch on the original cadence")
+def resume(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
+    return change_state(schedule_id, session, False)
