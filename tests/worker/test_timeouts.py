@@ -1,8 +1,12 @@
 import multiprocessing
+from threading import Event, Timer
 from time import monotonic
 from uuid import uuid4
 
+import pytest
+
 from pytask_service.worker.claim import ClaimedTask
+from pytask_service.worker.errors import LostClaimError
 from pytask_service.worker.runner import run_in_process
 
 
@@ -28,3 +32,18 @@ def test_deadline_still_applies_after_result_is_sent() -> None:
     outcome = run_in_process("tests.worker.sample_tasks:registry", task)
 
     assert outcome.timed_out
+
+
+def test_lost_lease_stops_running_child() -> None:
+    before = {child.pid for child in multiprocessing.active_children()}
+    task = ClaimedTask(uuid4(), "test.sleep", {"seconds": 30}, "worker-one")
+    cancel = Event()
+    timer = Timer(0.3, cancel.set)
+    timer.start()
+    try:
+        with pytest.raises(LostClaimError):
+            run_in_process("tests.worker.sample_tasks:registry", task, cancel)
+    finally:
+        timer.cancel()
+        timer.join(timeout=1)
+    assert {child.pid for child in multiprocessing.active_children()} == before
