@@ -3,13 +3,13 @@ from uuid import uuid4
 
 import pytest
 
-from pytask_service.registry import TaskRegistry, UnknownTaskError
 from pytask_service.db.models import Schedule
+from pytask_service.registry import TaskRegistry, UnknownTaskError
 from pytask_service.scheduling.definitions import (
     create_schedule,
-    validate_schedule_name,
-    list_schedules,
     list_occurrences,
+    list_schedules,
+    validate_schedule_name,
 )
 
 
@@ -53,15 +53,27 @@ def test_creating_a_schedule_copies_arguments_without_running_the_handler() -> N
     calls: list[object] = []
     registry = TaskRegistry()
     registry.register("example", lambda payload: calls.append(payload))
+
     class RecordingSession:
         schedule: Schedule | None = None
+
         def add(self, schedule: Schedule) -> None:
             self.schedule = schedule
+
         def flush(self) -> None:
             pass
+
     session = RecordingSession()
     arguments = {"payload": {"value": 1}}
-    schedule = create_schedule(session, registry, "copy-check", "example", arguments, interval_seconds=60, start_at=datetime(2027, 1, 1, tzinfo=UTC))
+    schedule = create_schedule(
+        session,
+        registry,
+        "copy-check",
+        "example",
+        arguments,
+        interval_seconds=60,
+        start_at=datetime(2027, 1, 1, tzinfo=UTC),
+    )
     arguments["payload"]["value"] = 2
     assert schedule.arguments == {"payload": {"value": 1}}
     assert session.schedule is schedule and calls == []

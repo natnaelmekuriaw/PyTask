@@ -77,7 +77,9 @@ def list_schedules(session: Session, *, limit: int = 100) -> list[Schedule]:
 def set_paused(session: Session, schedule_id: UUID, paused: bool) -> Schedule:
     bound_transaction(session)
     schedule = session.scalar(
-        select(Schedule).where(Schedule.id == schedule_id).with_for_update()
+        select(Schedule)
+        .where(Schedule.id == schedule_id)
+        .with_for_update()
         .execution_options(populate_existing=True)
     )
     if schedule is None:
@@ -89,7 +91,16 @@ def set_paused(session: Session, schedule_id: UUID, paused: bool) -> Schedule:
     return schedule
 
 
-def list_occurrences(session: Session, schedule_id: UUID, *, limit: int = 100) -> list[Task]:
+def list_occurrences(
+    session: Session, schedule_id: UUID, *, limit: int = 100
+) -> list[Task]:
     if type(limit) is not int or not 1 <= limit <= 1000:
         raise ValueError("Limit must be an integer from 1 to 1000")
-    return list(session.scalars(select(Task).where(Task.schedule_id == schedule_id).order_by(Task.scheduled_for.desc(), Task.id).limit(limit)))
+    return list(
+        session.scalars(
+            select(Task)
+            .where(Task.schedule_id == schedule_id)
+            .order_by(Task.scheduled_for.desc(), Task.id)
+            .limit(limit)
+        )
+    )

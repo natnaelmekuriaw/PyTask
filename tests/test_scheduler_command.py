@@ -10,18 +10,24 @@ from pytask_service.scheduling.enqueue import ScheduledTask
 
 
 @pytest.mark.parametrize("fails", [False, True])
-def test_scheduler_disposes_its_engine_after_dispatch(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], fails: bool) -> None:
+def test_scheduler_disposes_its_engine_after_dispatch(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], fails: bool
+) -> None:
     class Engine:
         disposed = False
+
         def dispose(self) -> None:
             self.disposed = True
+
     class Scheduler:
         def __init__(self, engine: object, policy: object) -> None:
             pass
+
         def run_once(self) -> list[ScheduledTask]:
             if fails:
                 raise RuntimeError("dispatch failed")
             return []
+
     engine = Engine()
     monkeypatch.setattr(command, "build_engine", lambda settings: engine)
     monkeypatch.setattr(command, "Scheduler", Scheduler)
@@ -35,8 +41,12 @@ def test_scheduler_disposes_its_engine_after_dispatch(monkeypatch: pytest.Monkey
     assert engine.disposed
 
 
-def test_scheduler_report_distinguishes_reused_occurrences(capsys: pytest.CaptureFixture[str]) -> None:
-    occurrence = ScheduledTask(uuid4(), uuid4(), datetime(2026, 10, 18, tzinfo=UTC), created=False)
+def test_scheduler_report_distinguishes_reused_occurrences(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    occurrence = ScheduledTask(
+        uuid4(), uuid4(), datetime(2026, 10, 18, tzinfo=UTC), created=False
+    )
     command.report(occurrence)
     report = json.loads(capsys.readouterr().out)
     assert report["id"] == str(occurrence.id)

@@ -3,7 +3,7 @@ import json
 import sys
 from uuid import UUID
 
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from pytask_service.cli_options import (
@@ -15,17 +15,17 @@ from pytask_service.cli_options import (
 )
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
+from pytask_service.monitoring import task_snapshot
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.scheduling.definitions import (
     create_schedule,
     get_schedule,
-    list_schedules,
     list_occurrences,
+    list_schedules,
     set_paused,
 )
 from pytask_service.scheduling.monitoring import schedule_snapshot
 from pytask_service.scheduling.time import parse_timestamp
-from pytask_service.monitoring import task_snapshot
 
 
 def configure_schedule_parser(parser: argparse.ArgumentParser) -> None:
@@ -46,7 +46,9 @@ def configure_schedule_parser(parser: argparse.ArgumentParser) -> None:
     )
     add_argument_options(create)
     add_policy_options(create)
-    create.add_argument("--paused", action="store_true", help="Create without dispatching until resumed")
+    create.add_argument(
+        "--paused", action="store_true", help="Create without dispatching until resumed"
+    )
     listing = commands.add_parser("list", help="List schedules by name")
     listing.add_argument("--limit", type=int, default=100)
     for action in ("show", "pause", "resume"):
@@ -100,8 +102,14 @@ def handle_schedule(args: argparse.Namespace) -> int:
                     if found_schedule is None:
                         raise ValueError(f"Schedule not found: {args.id}")
                     details = (
-                        [task_snapshot(task) for task in list_occurrences(session, args.id, limit=args.limit)]
-                        if args.schedule_command == "history" else schedule_snapshot(found_schedule)
+                        [
+                            task_snapshot(task)
+                            for task in list_occurrences(
+                                session, args.id, limit=args.limit
+                            )
+                        ]
+                        if args.schedule_command == "history"
+                        else schedule_snapshot(found_schedule)
                     )
         finally:
             engine.dispose()
