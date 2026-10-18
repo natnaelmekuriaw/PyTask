@@ -9,13 +9,13 @@ from sqlalchemy.orm import Session
 from pytask_service.db.models import TaskStatus
 from pytask_service.registry import load_registry
 from pytask_service.worker.claim import ClaimedTask, claim_next
-from pytask_service.worker.finish import finish_task
 from pytask_service.worker.errors import LostClaimError
+from pytask_service.worker.finish import finish_task
 from pytask_service.worker.heartbeat import LeaseKeeper
 from pytask_service.worker.identity import new_worker_id
+from pytask_service.worker.lease import renew_claim
 from pytask_service.worker.outcome import TaskOutcome
 from pytask_service.worker.policy import WorkerPolicy
-from pytask_service.worker.lease import renew_claim
 from pytask_service.worker.recovery import recover_expired
 from pytask_service.worker.runner import run_in_process
 from pytask_service.worker.transactions import bound_lease_transaction
@@ -56,7 +56,10 @@ class Worker:
         if claim is None:
             return None
 
-        keeper = LeaseKeeper(lambda: self._renew(claim), self.policy.heartbeat_seconds)
+        keeper = LeaseKeeper(
+            lambda: self._renew(claim), self.policy.heartbeat_seconds,
+            lease_seconds=self.policy.lease_seconds, initial_deadline=claim.lease_deadline,
+        )
         with keeper:
             try:
                 outcome = self.executor(self.registry_path, claim, keeper.cancel_event)

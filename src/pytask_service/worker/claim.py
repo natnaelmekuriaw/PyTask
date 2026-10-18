@@ -1,7 +1,8 @@
+import math
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import timedelta
-import math
+from time import monotonic
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
@@ -20,9 +21,12 @@ class ClaimedTask:
     token: UUID = field(default_factory=uuid4)
     attempt_number: int = 1
     timeout_seconds: float = 300
+    lease_deadline: float | None = None
 
 
-def claim_next(session: Session, worker_id: str, lease_seconds: float = 30) -> ClaimedTask | None:
+def claim_next(
+    session: Session, worker_id: str, lease_seconds: float = 30
+) -> ClaimedTask | None:
     if not worker_id or len(worker_id) > 128:
         raise ValueError("worker_id must contain 1 to 128 characters")
     if not math.isfinite(lease_seconds) or lease_seconds <= 0:
@@ -42,6 +46,7 @@ def claim_next(session: Session, worker_id: str, lease_seconds: float = 30) -> C
     if task is None:
         return None
 
+    lease_deadline = monotonic() + lease_seconds
     now = database_now(session)
     token = uuid4()
     task.status = TaskStatus.RUNNING.value
@@ -53,12 +58,24 @@ def claim_next(session: Session, worker_id: str, lease_seconds: float = 30) -> C
     task.attempt_count += 1
     task.result = None
     task.error = None
-    session.add(TaskAttempt(
-        id=token, task_id=task.id, number=task.attempt_count, worker_id=worker_id,
-        status=AttemptStatus.RUNNING.value, started_at=now,
-    ))
+    session.add(
+        TaskAttempt(
+            id=token,
+            task_id=task.id,
+            number=task.attempt_count,
+            worker_id=worker_id,
+            status=AttemptStatus.RUNNING.value,
+            started_at=now,
+        )
+    )
     session.flush()
     return ClaimedTask(
-        task.id, task.name, deepcopy(task.arguments), worker_id, token,
-        task.attempt_count, task.timeout_seconds,
+        task.id,
+        task.name,
+        deepcopy(task.arguments),
+        worker_id,
+        token,
+        task.attempt_count,
+        task.timeout_seconds,
+        lease_deadline,
     )
