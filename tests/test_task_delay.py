@@ -20,3 +20,10 @@ def test_absolute_time_never_reads_the_database() -> None:
 def test_delay_and_absolute_time_are_mutually_exclusive() -> None:
     with pytest.raises(ValueError, match="either"):
         resolve_availability(None, run_at=datetime.now(UTC), delay=1)
+
+
+def test_delay_uses_the_database_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    now = datetime(2026, 10, 18, tzinfo=UTC)
+    monkeypatch.setattr("pytask_service.scheduling.delay.database_now", lambda session: now)
+    assert resolve_availability(None, delay=1.25) == now + timedelta(seconds=1.25)
+    assert resolve_availability(None, delay=0) == now
