@@ -26,3 +26,14 @@ def test_invalid_cursor_is_reported_without_running_a_query(client: TestClient) 
     response = client.get("/api/v1/tasks?cursor=bad.cursor")
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "invalid_cursor"
+
+
+def test_oversized_and_non_json_requests_use_the_error_contract(client: TestClient) -> None:
+    assert client.post("/api/v1/tasks", content=b"x" * (128 * 1024 + 1), headers={"content-type": "application/json"}).status_code == 413
+    assert client.post("/api/v1/tasks", content="{}", headers={"content-type": "text/plain"}).status_code == 415
+
+
+def test_nonfinite_invalid_input_still_produces_valid_error_json(client: TestClient) -> None:
+    response = client.post("/api/v1/tasks", content='{"name":"math.add","arguments":{"value":NaN}}', headers={"content-type": "application/json"})
+    assert response.status_code == 422
+    assert "input" not in response.json()["error"]["details"][0]
