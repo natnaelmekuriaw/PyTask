@@ -79,3 +79,18 @@ def test_nonfinite_invalid_input_still_produces_valid_error_json(
     )
     assert response.status_code == 422
     assert "input" not in response.json()["error"]["details"][0]
+
+
+def test_excessively_nested_json_is_a_client_error(client: TestClient) -> None:
+    body = (
+        b'{"name":"math.add","arguments":{"nested":'
+        + b"[" * 1100
+        + b"0"
+        + b"]" * 1100
+        + b"}}"
+    )
+    response = client.post(
+        "/api/v1/tasks", content=body, headers={"content-type": "application/json"}
+    )
+    assert response.status_code == 400
+    assert "error" in response.json()

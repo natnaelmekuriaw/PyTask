@@ -68,6 +68,6 @@ class BodyLimitMiddleware:
         await self.app(scope, replay, send)
 
     async def _too_large(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await error_response(413, "request_too_large", "Request body exceeds 128 KiB")(
-            scope, receive, send
-        )
+        await error_response(
+            413, "request_too_large", f"Request body exceeds {self.max_bytes} bytes"
+        )(scope, receive, send)

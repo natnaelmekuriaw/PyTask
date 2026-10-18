@@ -75,3 +75,28 @@ def test_json_media_types_and_exact_size_bodies_are_accepted(media_type: bytes) 
 def test_bodyless_controls_need_no_content_type() -> None:
     assert send_chunks([b""], []) == (200, {"bytes": 0})
     assert send_chunks([b"{}"], [(b"content-type", b"text/plain")])[0] == 415
+
+
+def test_disconnected_uploads_do_not_start_the_application() -> None:
+    async def request() -> None:
+        messages = iter(
+            [
+                {"type": "http.request", "body": b"{", "more_body": True},
+                {"type": "http.disconnect"},
+            ]
+        )
+
+        async def receive() -> Message:
+            return next(messages)
+
+        async def unexpected(scope: Scope, receive: Receive, send: Send) -> None:
+            raise AssertionError("incomplete request reached the application")
+
+        async def send(message: Message) -> None:
+            raise AssertionError("disconnected request received a response")
+
+        await BodyLimitMiddleware(unexpected)(
+            {"type": "http", "method": "POST", "headers": []}, receive, send
+        )
+
+    asyncio.run(request())
