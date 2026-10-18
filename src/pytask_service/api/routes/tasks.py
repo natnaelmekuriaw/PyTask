@@ -9,8 +9,10 @@ from pytask_service.api.schemas.monitoring import TaskRead
 from pytask_service.api.schemas.tasks import TaskSubmit
 from pytask_service.monitoring import task_snapshot
 from pytask_service.tasks import get_task, submit_task
-from pytask_service.api.task_queries import task_page
-from pytask_service.api.schemas.pages import Page
+from pytask_service.api.task_queries import task_page, attempt_page
+from pytask_service.api.schemas.pages import Page, AttemptPage
+from pytask_service.api.schemas.monitoring import AttemptRead
+from pytask_service.monitoring import attempt_snapshot
 from pytask_service.db.models import TaskStatus
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
@@ -42,3 +44,12 @@ def read_task(task_id: UUID, session: SessionDep) -> TaskRead:
         if task is None:
             raise APIError(404, "task_not_found", "Task not found")
         return TaskRead.model_validate(task_snapshot(task))
+
+
+@router.get("/{task_id}/attempts", response_model=AttemptPage, summary="Read task execution history")
+def read_attempts(task_id: UUID, session: SessionDep, limit: Annotated[int, Query(ge=1, le=100)] = 50, after: Annotated[int, Query(ge=0, le=1000)] = 0) -> AttemptPage:
+    with session.begin():
+        if get_task(session, task_id) is None:
+            raise APIError(404, "task_not_found", "Task not found")
+        items, next_after = attempt_page(session, task_id, limit=limit, after=after)
+        return AttemptPage(items=[AttemptRead.model_validate(attempt_snapshot(item)) for item in items], next_after=next_after)
