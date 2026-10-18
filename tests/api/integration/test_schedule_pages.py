@@ -13,27 +13,50 @@ from pytask_service.db.models import Schedule
 pytestmark = pytest.mark.integration
 
 
-def test_schedule_pages_resolve_timestamp_ties(database_client: TestClient, isolated_engine: Engine, schedule: Callable[..., dict[str, Any]]) -> None:
+def test_schedule_pages_resolve_timestamp_ties(
+    database_client: TestClient,
+    isolated_engine: Engine,
+    schedule: Callable[..., dict[str, Any]],
+) -> None:
     ids = [schedule()["id"] for _ in range(3)]
     with Session(isolated_engine) as session, session.begin():
-        session.execute(update(Schedule).values(created_at=datetime(2026, 1, 1, tzinfo=UTC)))
+        session.execute(
+            update(Schedule).values(created_at=datetime(2026, 1, 1, tzinfo=UTC))
+        )
     first = database_client.get("/api/v1/schedules", params={"limit": 2}).json()
-    last = database_client.get("/api/v1/schedules", params={"cursor": first["next_cursor"]}).json()
-    assert [item["id"] for item in first["items"] + last["items"]] == sorted(ids, reverse=True)
+    last = database_client.get(
+        "/api/v1/schedules", params={"cursor": first["next_cursor"]}
+    ).json()
+    assert [item["id"] for item in first["items"] + last["items"]] == sorted(
+        ids, reverse=True
+    )
     assert last["next_cursor"] is None
 
 
-def test_schedule_filters_combine_paused_state_and_handler(database_client: TestClient, schedule: Callable[..., dict[str, Any]]) -> None:
+def test_schedule_filters_combine_paused_state_and_handler(
+    database_client: TestClient, schedule: Callable[..., dict[str, Any]]
+) -> None:
     selected = schedule(paused=True)["id"]
     schedule(paused=False)
     schedule(paused=True, task_name="demo.greet", arguments={"name": "reader"})
-    page = database_client.get("/api/v1/schedules", params={"paused": "true", "task_name": "math.add"}).json()
+    page = database_client.get(
+        "/api/v1/schedules", params={"paused": "true", "task_name": "math.add"}
+    ).json()
     assert [item["id"] for item in page["items"]] == [selected]
 
 
-def test_schedule_cursor_requires_its_original_filters(database_client: TestClient, schedule: Callable[..., dict[str, Any]]) -> None:
+def test_schedule_cursor_requires_its_original_filters(
+    database_client: TestClient, schedule: Callable[..., dict[str, Any]]
+) -> None:
     schedule(paused=True)
     schedule(paused=True)
-    first = database_client.get("/api/v1/schedules", params={"limit": 1, "paused": "true"}).json()
-    changed = database_client.get("/api/v1/schedules", params={"cursor": first["next_cursor"]})
-    assert changed.status_code == 422 and changed.json()["error"]["code"] == "invalid_cursor"
+    first = database_client.get(
+        "/api/v1/schedules", params={"limit": 1, "paused": "true"}
+    ).json()
+    changed = database_client.get(
+        "/api/v1/schedules", params={"cursor": first["next_cursor"]}
+    )
+    assert (
+        changed.status_code == 422
+        and changed.json()["error"]["code"] == "invalid_cursor"
+    )

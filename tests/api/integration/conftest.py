@@ -14,7 +14,11 @@ from tests.worker.conftest import isolated_engine as isolated_engine
 
 @pytest.fixture
 def database_client(isolated_engine: Engine) -> Iterator[TestClient]:
-    app = create_app(Settings("postgresql+psycopg://u:p@localhost/db"), engine=isolated_engine, registry=registry)
+    app = create_app(
+        Settings("postgresql+psycopg://u:p@localhost/db"),
+        engine=isolated_engine,
+        registry=registry,
+    )
     with TestClient(app) as client:
         yield client
 
@@ -22,16 +26,34 @@ def database_client(isolated_engine: Engine) -> Iterator[TestClient]:
 @pytest.fixture
 def submit(database_client: TestClient) -> Callable[..., dict[str, Any]]:
     def create(**overrides: object) -> dict[str, Any]:
-        response = database_client.post("/api/v1/tasks", json={"name": "math.add", "arguments": {"left": 1, "right": 2}, **overrides})
+        response = database_client.post(
+            "/api/v1/tasks",
+            json={
+                "name": "math.add",
+                "arguments": {"left": 1, "right": 2},
+                **overrides,
+            },
+        )
         assert response.status_code == 201, response.text
         return response.json()
+
     return create
 
 
 @pytest.fixture
 def schedule(database_client: TestClient) -> Callable[..., dict[str, Any]]:
     def create(**overrides: object) -> dict[str, Any]:
-        response = database_client.post("/api/v1/schedules", json={"name": f"report-{uuid4().hex}", "task_name": "math.add", "arguments": {"left": 1, "right": 2}, "interval_seconds": 60, **overrides})
+        response = database_client.post(
+            "/api/v1/schedules",
+            json={
+                "name": f"report-{uuid4().hex}",
+                "task_name": "math.add",
+                "arguments": {"left": 1, "right": 2},
+                "interval_seconds": 60,
+                **overrides,
+            },
+        )
         assert response.status_code == 201, response.text
         return response.json()
+
     return create

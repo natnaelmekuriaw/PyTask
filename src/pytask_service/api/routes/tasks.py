@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Response, Request
+from fastapi import APIRouter, Query, Request, Response
 
 from pytask_service.api.dependencies import ResourcesDep, SessionDep
 from pytask_service.api.errors import APIError
@@ -44,7 +44,11 @@ def list_tasks(
     "", status_code=201, response_model=TaskRead, summary="Submit a registered task"
 )
 def create_task(
-    body: TaskSubmit, response: Response, request: Request, session: SessionDep, resources: ResourcesDep
+    body: TaskSubmit,
+    response: Response,
+    request: Request,
+    session: SessionDep,
+    resources: ResourcesDep,
 ) -> TaskRead:
     with session.begin():
         task_id = submit_task(
