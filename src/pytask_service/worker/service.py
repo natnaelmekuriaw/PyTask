@@ -91,6 +91,10 @@ class Worker:
 
         with Session(self.engine) as session, session.begin():
             status = finish_task(session, claim, outcome)
+        event = "task.attempt_finished"
+        if outcome.timed_out:
+            event = "task.attempt_timed_out"
+        log_event(logger, event, status=status.value)
         return WorkedTask(claim.id, outcome, status, claim.attempt_number)
 
     def _renew(self, claim: ClaimedTask) -> bool:
