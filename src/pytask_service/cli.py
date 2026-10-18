@@ -16,6 +16,7 @@ from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.tasks import get_task, submit_task
 from pytask_service.worker.command import run_forever, run_one
+from pytask_service.worker.policy import WorkerPolicy
 
 
 def main() -> int:
@@ -42,6 +43,8 @@ def main() -> int:
     worker.add_argument(
         "--poll-interval", type=float, default=0.5, help="Seconds between empty polls"
     )
+    worker.add_argument("--lease-seconds", type=float, default=30, help="Lease duration in seconds")
+    worker.add_argument("--heartbeat-seconds", type=float, default=10, help="Lease renewal interval")
     args = parser.parse_args()
 
     if args.command == "check-db":
@@ -77,10 +80,11 @@ def main() -> int:
     if args.command == "worker":
         try:
             settings = Settings.from_env()
+            worker_policy = WorkerPolicy(args.lease_seconds, args.heartbeat_seconds)
             if args.once:
-                return run_one(settings)
-            return run_forever(settings, args.poll_interval)
-        except (ValueError, TypeError, SQLAlchemyError) as exc:
+                return run_one(settings, worker_policy)
+            return run_forever(settings, args.poll_interval, worker_policy)
+        except (ValueError, TypeError, RuntimeError, SQLAlchemyError) as exc:
             print(f"Worker failed: {exc}", file=sys.stderr)
             return 1
 
