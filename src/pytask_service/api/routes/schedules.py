@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Query, Response, Request
 
 from pytask_service.api.dependencies import ResourcesDep, SessionDep
 from pytask_service.api.errors import APIError
@@ -52,6 +52,7 @@ def listing(
 def create(
     body: ScheduleCreate,
     response: Response,
+    request: Request,
     session: SessionDep,
     resources: ResourcesDep,
 ) -> ScheduleRead:
@@ -68,7 +69,7 @@ def create(
             paused=body.paused,
         )
         result = ScheduleRead.model_validate(schedule_snapshot(schedule))
-    response.headers["Location"] = f"/api/v1/schedules/{result.id}"
+    response.headers["Location"] = request.url_for("read", schedule_id=result.id).path
     return result
 
 

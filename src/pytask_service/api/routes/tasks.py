@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Query, Response, Request
 
 from pytask_service.api.dependencies import ResourcesDep, SessionDep
 from pytask_service.api.errors import APIError
@@ -44,7 +44,7 @@ def list_tasks(
     "", status_code=201, response_model=TaskRead, summary="Submit a registered task"
 )
 def create_task(
-    body: TaskSubmit, response: Response, session: SessionDep, resources: ResourcesDep
+    body: TaskSubmit, response: Response, request: Request, session: SessionDep, resources: ResourcesDep
 ) -> TaskRead:
     with session.begin():
         task_id = submit_task(
@@ -60,7 +60,7 @@ def create_task(
         if task is None:
             raise RuntimeError("Submitted task was not found in its transaction")
         result = TaskRead.model_validate(task_snapshot(task))
-    response.headers["Location"] = f"/api/v1/tasks/{task_id}"
+    response.headers["Location"] = request.url_for("read_task", task_id=task_id).path
     return result
 
 
