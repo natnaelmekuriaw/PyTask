@@ -40,3 +40,13 @@ def create_schedule(
     session.add(schedule)
     session.flush()
     return schedule
+
+
+def get_schedule(session: Session, schedule_id: UUID) -> Schedule | None:
+    return session.get(Schedule, schedule_id)
+
+
+def list_schedules(session: Session, *, limit: int = 100) -> list[Schedule]:
+    if type(limit) is not int or not 1 <= limit <= 1000:
+        raise ValueError("Limit must be an integer from 1 to 1000")
+    return list(session.scalars(select(Schedule).order_by(Schedule.name, Schedule.id).limit(limit)))
