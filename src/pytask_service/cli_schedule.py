@@ -20,10 +20,12 @@ from pytask_service.scheduling.definitions import (
     create_schedule,
     get_schedule,
     list_schedules,
+    list_occurrences,
     set_paused,
 )
 from pytask_service.scheduling.monitoring import schedule_snapshot
 from pytask_service.scheduling.time import parse_timestamp
+from pytask_service.monitoring import task_snapshot
 
 
 def configure_schedule_parser(parser: argparse.ArgumentParser) -> None:
@@ -49,6 +51,9 @@ def configure_schedule_parser(parser: argparse.ArgumentParser) -> None:
     for action in ("show", "pause", "resume"):
         command = commands.add_parser(action, help=f"{action.capitalize()} a schedule")
         command.add_argument("id", type=UUID)
+    history = commands.add_parser("history", help="Show recent task occurrences")
+    history.add_argument("id", type=UUID)
+    history.add_argument("--limit", type=int, default=100)
 
 
 def handle_schedule(args: argparse.Namespace) -> int:
@@ -92,7 +97,10 @@ def handle_schedule(args: argparse.Namespace) -> int:
                     found_schedule = get_schedule(session, args.id)
                     if found_schedule is None:
                         raise ValueError(f"Schedule not found: {args.id}")
-                    details = schedule_snapshot(found_schedule)
+                    details = (
+                        [task_snapshot(task) for task in list_occurrences(session, args.id, limit=args.limit)]
+                        if args.schedule_command == "history" else schedule_snapshot(found_schedule)
+                    )
         finally:
             engine.dispose()
     except (
