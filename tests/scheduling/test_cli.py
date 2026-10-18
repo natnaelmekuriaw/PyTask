@@ -32,3 +32,12 @@ def test_schedule_cli_creates_inspects_pauses_and_resumes(invoke: Callable[..., 
     assert invoke("schedule", "list")[0]["id"] == schedule_id
     assert invoke("schedule", "resume", schedule_id)["paused"] is False
     assert invoke("schedule", "pause", schedule_id)["paused"] is True
+
+
+def test_scheduler_cli_dispatches_without_loading_a_registry(invoke: Callable[..., object], monkeypatch: pytest.MonkeyPatch) -> None:
+    created = invoke("schedule", "create", "report", "math.add", "--every", "60", "--args", '{"left": 1, "right": 2}')
+    monkeypatch.delenv("PYTASK_REGISTRY")
+    report = invoke("scheduler", "--once")
+    assert report["created"] is True and report["schedule_id"] == created["id"]
+    history = invoke("schedule", "history", created["id"])
+    assert len(history) == 1 and history[0]["id"] == report["id"]
