@@ -37,6 +37,16 @@ not enter execution timing. Widening the window can reveal older samples.
 
 ## The endpoint returns 503 or the command reports unavailable
 
+The statistics command reports configuration errors explicitly. If it says
+`PYTASK_DATABASE_URL is required`, set the connection in the same PowerShell
+window before retrying. Variables set in a different terminal do not update
+this terminal's environment.
+
+Missing table or column errors direct you to apply migrations. Other messages
+distinguish rejected credentials, permission failures, query cancellation,
+and lock timeouts. Unexpected PostgreSQL query failures include their
+SQLSTATE code for diagnosis without exposing SQL or credentials.
+
 Check the connection with `pytask-service check-db`, then check the migration
 revision and `alembic check`. Summary queries have a five-second statement
 timeout and two-second lock timeout. Large retained histories and database
