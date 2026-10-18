@@ -41,3 +41,12 @@ def test_task_filters_combine_status_and_registered_name(database_client: TestCl
         session.execute(update(Task).where(Task.id == UUID(succeeded)).values(status="succeeded", result=3))
     page = database_client.get("/api/v1/tasks", params={"status": "pending", "name": "math.add"}).json()
     assert [item["id"] for item in page["items"]] == [pending]
+
+
+def test_task_cursor_cannot_be_reused_after_filter_changes(database_client: TestClient, submit: Callable[..., dict[str, Any]]) -> None:
+    submit()
+    submit()
+    page = database_client.get("/api/v1/tasks", params={"limit": 1}).json()
+    response = database_client.get("/api/v1/tasks", params={"cursor": page["next_cursor"], "status": "pending"})
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "invalid_cursor"
