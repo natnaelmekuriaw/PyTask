@@ -24,3 +24,13 @@ def outcome_aggregate(
     ).where(
         TaskAttempt.finished_at >= since, TaskAttempt.finished_at <= now
     ).subquery("outcomes")
+
+
+def retry_aggregate(
+    since: ColumnElement[datetime], now: ColumnElement[datetime]
+) -> Subquery:
+    return select(func.count().label("retries_started")).where(
+        TaskAttempt.started_at >= since,
+        TaskAttempt.started_at <= now,
+        TaskAttempt.number > 1,
+    ).subquery("retries")
