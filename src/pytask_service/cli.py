@@ -13,6 +13,7 @@ from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.registry import UnknownTaskError, load_registry
 from pytask_service.tasks import get_task, submit_task
+from pytask_service.worker.command import run_forever, run_one
 
 
 def main() -> int:
@@ -30,6 +31,11 @@ def main() -> int:
     )
     status = commands.add_parser("status", help="Show a task's current status")
     status.add_argument("id", type=UUID, help="Task ID")
+    worker = commands.add_parser("worker", help="Run queued tasks")
+    worker.add_argument("--once", action="store_true", help="Process at most one task")
+    worker.add_argument(
+        "--poll-interval", type=float, default=0.5, help="Seconds between empty polls"
+    )
     args = parser.parse_args()
 
     if args.command == "check-db":
@@ -57,6 +63,15 @@ def main() -> int:
         return _submit(args.name, raw_arguments)
     if args.command == "status":
         return _status(args.id)
+    if args.command == "worker":
+        try:
+            settings = Settings.from_env()
+            if args.once:
+                return run_one(settings)
+            return run_forever(settings, args.poll_interval)
+        except (ValueError, TypeError, SQLAlchemyError) as exc:
+            print(f"Worker failed: {exc}", file=sys.stderr)
+            return 1
 
     return 2
 
