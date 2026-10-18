@@ -66,7 +66,11 @@ class Worker:
         with bind_context(task_id=claim.id, attempt_id=claim.token,
                           attempt_number=claim.attempt_number, worker_id=claim.worker_id):
             log_event(logger, "task.claimed")
-            return self._execute(claim)
+            try:
+                return self._execute(claim)
+            except LostClaimError:
+                log_event(logger, "task.lease_lost", level=logging.WARNING)
+                raise
 
     def _execute(self, claim: ClaimedTask) -> WorkedTask:
         keeper = LeaseKeeper(
