@@ -33,8 +33,8 @@ def task_snapshot(task: Task) -> dict[str, object]:
 def attempt_snapshot(attempt: TaskAttempt) -> dict[str, object]:
     duration = None
     queue_wait = None
-    if attempt.queued_at is not None:
-        queue_wait = max(0.0, (attempt.started_at - attempt.queued_at).total_seconds())
+    if attempt.queued_at is not None and attempt.queued_at <= attempt.started_at:
+        queue_wait = (attempt.started_at - attempt.queued_at).total_seconds()
     if attempt.finished_at is not None:
         duration = (attempt.finished_at - attempt.started_at).total_seconds()
     return {
