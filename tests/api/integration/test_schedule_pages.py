@@ -21,3 +21,11 @@ def test_schedule_pages_resolve_timestamp_ties(database_client: TestClient, isol
     last = database_client.get("/api/v1/schedules", params={"cursor": first["next_cursor"]}).json()
     assert [item["id"] for item in first["items"] + last["items"]] == sorted(ids, reverse=True)
     assert last["next_cursor"] is None
+
+
+def test_schedule_filters_combine_paused_state_and_handler(database_client: TestClient, schedule: Callable[..., dict[str, Any]]) -> None:
+    selected = schedule(paused=True)["id"]
+    schedule(paused=False)
+    schedule(paused=True, task_name="demo.greet", arguments={"name": "reader"})
+    page = database_client.get("/api/v1/schedules", params={"paused": "true", "task_name": "math.add"}).json()
+    assert [item["id"] for item in page["items"]] == [selected]
