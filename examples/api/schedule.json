@@ -1,0 +1,7 @@
+{
+  "name": "minute-add",
+  "task_name": "math.add",
+  "arguments": {"left": 1, "right": 2},
+  "interval_seconds": 60,
+  "paused": true
+}
