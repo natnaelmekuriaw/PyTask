@@ -20,3 +20,11 @@ def test_created_schedule_keeps_arguments_and_execution_policy(isolated_engine: 
         assert (schedule.max_attempts, schedule.timeout_seconds, schedule.retry_base_seconds, schedule.retry_max_seconds) == (5, 12, 2, 20)
         assert schedule.last_scheduled_for is None
         assert not schedule.paused
+
+
+def test_schedule_listing_has_stable_name_order_and_a_limit(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_factory(name="z-last")
+    first = schedule_factory(name="a-first")
+    with Session(isolated_engine) as session:
+        rows = list_schedules(session, limit=1)
+        assert [row.id for row in rows] == [first]
