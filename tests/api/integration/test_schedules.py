@@ -1,6 +1,9 @@
 from collections.abc import Callable
 from typing import Any
 from uuid import UUID
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+from sqlalchemy import func, select
 
 import pytest
 from fastapi.testclient import TestClient
@@ -39,3 +42,15 @@ def test_duplicate_schedule_name_returns_conflict_without_replacing_it(database_
     assert response.json()["error"]["code"] == "schedule_name_conflict"
     saved = database_client.get(f"/api/v1/schedules/{original['id']}").json()
     assert saved["arguments"] == original["arguments"] and saved["interval_seconds"] == 60
+
+
+def test_concurrent_schedule_creates_return_one_success_and_one_conflict(database_client: TestClient, isolated_engine: Engine) -> None:
+    barrier = Barrier(2)
+    def create() -> int:
+        barrier.wait(timeout=5)
+        return database_client.post("/api/v1/schedules", json={"name": "shared", "task_name": "math.add", "arguments": {"left": 1, "right": 2}, "interval_seconds": 60}).status_code
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(create) for _ in range(2)]
+        assert sorted(future.result(timeout=10) for future in futures) == [201, 409]
+    with Session(isolated_engine) as session:
+        assert session.scalar(select(func.count()).select_from(Schedule)) == 1
