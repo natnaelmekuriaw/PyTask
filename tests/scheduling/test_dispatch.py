@@ -77,11 +77,15 @@ def test_schedule_history_is_scoped_and_newest_first(isolated_engine: Engine, sc
         dispatch_due(session)
         schedule = get_schedule(session, schedule_id)
         assert schedule is not None
-        schedule.next_run_at -= timedelta(seconds=120)
+        schedule.next_run_at = database_now(session) - timedelta(milliseconds=100)
     with Session(isolated_engine) as session, session.begin():
         dispatch_due(session)
         rows = list_occurrences(session, schedule_id, limit=1)
         assert len(rows) == 1 and rows[0].schedule_id == schedule_id
+        history = list_occurrences(session, schedule_id)
+        assert len(history) == 2
+        assert history[0].scheduled_for > history[1].scheduled_for
+        assert history[0].id == rows[0].id
         assert len(list_occurrences(session, other_id)) == 1
 
 
@@ -104,6 +108,12 @@ def test_rollback_discards_both_task_and_cursor_changes(isolated_engine: Engine,
         assert schedule is not None
         original = schedule.next_run_at
         assert len(dispatch_due(session)) == 1
+        transaction.rollback()
+    with Session(isolated_engine) as session, session.begin():
+        schedule = get_schedule(session, schedule_id)
+        assert schedule is not None and schedule.next_run_at == original
+        assert session.scalar(select(func.count()).select_from(Task)) == 0
+        assert len(dispatch_due(session)) == 1
 
 
 def test_rewound_cursor_reuses_the_existing_occurrence_task(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
@@ -117,9 +127,3 @@ def test_rewound_cursor_reuses_the_existing_occurrence_task(isolated_engine: Eng
         repeated = dispatch_due(session)[0]
         assert repeated.id == first.id and not repeated.created
         assert session.scalar(select(func.count()).select_from(Task)) == 1
-        transaction.rollback()
-    with Session(isolated_engine) as session, session.begin():
-        schedule = get_schedule(session, schedule_id)
-        assert schedule is not None and schedule.next_run_at == original
-        assert session.scalar(select(func.count()).select_from(Task)) == 0
-        assert len(dispatch_due(session)) == 1
