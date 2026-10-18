@@ -33,3 +33,12 @@ def test_scheduler_disposes_its_engine_after_dispatch(monkeypatch: pytest.Monkey
         assert command.run_scheduler(settings, once=True) == 0
         assert capsys.readouterr().out == ""
     assert engine.disposed
+
+
+def test_scheduler_report_distinguishes_reused_occurrences(capsys: pytest.CaptureFixture[str]) -> None:
+    occurrence = ScheduledTask(uuid4(), uuid4(), datetime(2026, 10, 18, tzinfo=UTC), created=False)
+    command.report(occurrence)
+    report = json.loads(capsys.readouterr().out)
+    assert report["id"] == str(occurrence.id)
+    assert report["created"] is False
+    assert report["scheduled_for"] == "2026-10-18T00:00:00+00:00"
