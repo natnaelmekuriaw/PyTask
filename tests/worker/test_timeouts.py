@@ -25,9 +25,7 @@ def test_timeout_stops_and_reaps_the_child() -> None:
 
 
 def test_deadline_still_applies_after_result_is_sent() -> None:
-    task = ClaimedTask(
-        uuid4(), "test.linger", {}, "worker-one", timeout_seconds=0.5
-    )
+    task = ClaimedTask(uuid4(), "test.linger", {}, "worker-one", timeout_seconds=0.5)
 
     outcome = run_in_process("tests.worker.sample_tasks:registry", task)
 
@@ -47,3 +45,16 @@ def test_lost_lease_stops_running_child() -> None:
         timer.cancel()
         timer.join(timeout=1)
     assert {child.pid for child in multiprocessing.active_children()} == before
+
+
+def test_pre_cancelled_claim_never_starts_a_child(monkeypatch: pytest.MonkeyPatch) -> None:
+    cancel = Event()
+    cancel.set()
+    task = ClaimedTask(uuid4(), "test.sleep", {"seconds": 30}, "worker-one")
+
+    def unexpected_context(method: str) -> None:
+        raise AssertionError("A cancelled claim must not start a process")
+
+    monkeypatch.setattr(multiprocessing, "get_context", unexpected_context)
+    with pytest.raises(LostClaimError):
+        run_in_process("tests.worker.sample_tasks:registry", task, cancel)

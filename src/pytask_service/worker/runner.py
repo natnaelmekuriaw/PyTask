@@ -17,6 +17,8 @@ def run_in_process(
     *,
     context: BaseContext | None = None,
 ) -> TaskOutcome:
+    if cancel_event is not None and cancel_event.is_set():
+        raise LostClaimError(f"Task lease was lost before execution: {task.id}")
     context = context or multiprocessing.get_context("spawn")
     receiver, sender = context.Pipe(duplex=False)
     process = context.Process(  # type: ignore[attr-defined]
