@@ -1,4 +1,5 @@
 import os
+import time
 
 from pytask_service.registry import TaskRegistry
 
@@ -10,3 +11,10 @@ def crash() -> None:
 
 
 registry.register("test.crash", crash)
+
+
+def sleep(seconds: float) -> None:
+    time.sleep(seconds)
+
+
+registry.register("test.sleep", sleep)
