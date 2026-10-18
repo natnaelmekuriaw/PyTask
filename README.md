@@ -212,12 +212,35 @@ See [PowerShell examples](docs/api-examples.md), the [API contract](docs/api-con
 and [operation notes](docs/api-operations.md). This stage has no authentication;
 keep the server bound to localhost until access control is added.
 
-## Planned milestones
+## Monitoring
+
+Read queue pressure, recent attempt outcomes, timing samples, and schedule
+backlog with the CLI:
+
+```powershell
+.\.venv\Scripts\pytask-service stats
+```
+
+Use `--window-seconds 300` for five-minute attempt observations. Queue and
+schedule counts always cover retained rows. The API serves the same summary
+at `GET /api/v1/monitoring`; it does not start workers or schedulers.
+
+Service events use JSON on stderr and include operational identifiers without
+task arguments or results. API responses carry `X-Request-ID` for correlation.
+New attempts record queue eligibility; older attempts can have unknown wait
+times. Apply the [monitoring upgrade](docs/monitoring-upgrade.md) first.
+
+See the [definitions](docs/monitoring.md), [PowerShell examples](docs/monitoring-examples.md),
+[event reference](docs/operational-logs.md), [troubleshooting](docs/monitoring-troubleshooting.md),
+and [crash recovery demonstration](docs/monitoring-demo.md).
+
+## Milestones
 
 1. Register and submit named tasks with JSON arguments. **Implemented.**
 2. Claim and run tasks across multiple workers. **Implemented.**
 3. Add retries, leases, crash recovery, and timeouts. **Implemented.**
 4. Add delayed and recurring scheduling. **Implemented.**
-5. Expose submission and monitoring through an API. **Current stage.**
+5. Expose submission and monitoring through an API. **Implemented.**
+6. Add operational summaries and structured events. **Implemented.**
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.
