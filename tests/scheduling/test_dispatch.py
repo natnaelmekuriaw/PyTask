@@ -50,3 +50,12 @@ def test_downtime_enqueues_only_the_latest_due_occurrence(isolated_engine: Engin
         assert occurrence == start + timedelta(days=30)
         schedule = get_schedule(session, schedule_id)
         assert schedule is not None and schedule.next_run_at > database_now(session)
+
+
+def test_repeated_ticks_do_not_enqueue_the_same_occurrence(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_factory()
+    with Session(isolated_engine) as session, session.begin():
+        first = dispatch_due(session)
+    with Session(isolated_engine) as session, session.begin():
+        assert dispatch_due(session) == []
+        assert session.scalar(select(func.count()).select_from(Task)) == len(first) == 1
