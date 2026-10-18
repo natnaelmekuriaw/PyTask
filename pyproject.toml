@@ -10,9 +10,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
 dependencies = [
+    "fastapi>=0.121,<1",
+    "pydantic>=2.10,<3",
     "alembic>=1.14,<2",
     "psycopg[binary]>=3.2,<4",
     "SQLAlchemy>=2.0,<3",
+    "uvicorn>=0.34,<1",
 ]
 
 [project.scripts]
@@ -20,6 +23,7 @@ pytask-service = "pytask_service.cli:main"
 
 [project.optional-dependencies]
 dev = [
+    "httpx>=0.28,<1",
     "mypy>=1.15,<2",
     "pytest>=8.3,<9",
     "ruff>=0.11,<1",
