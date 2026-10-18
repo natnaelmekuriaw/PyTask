@@ -73,7 +73,6 @@ class Worker:
             attempt_number=claim.attempt_number,
             worker_id=claim.worker_id,
         ):
-            log_event(logger, "task.claimed")
             try:
                 return self._execute(claim)
             except LostClaimError:
@@ -88,6 +87,8 @@ class Worker:
             initial_deadline=claim.lease_deadline,
         )
         with keeper:
+            log_event(logger, "task.claimed")
+            keeper.raise_if_lost()
             try:
                 outcome = self.executor(self.registry_path, claim, keeper.cancel_event)
             except LostClaimError:
