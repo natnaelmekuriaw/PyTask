@@ -5,7 +5,11 @@ from pytask_service.config import Settings
 
 
 def build_engine(settings: Settings) -> Engine:
-    return create_engine(settings.database_url, pool_pre_ping=True)
+    return create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+        connect_args={"connect_timeout": 5},
+    )
 
 
 def check_connection(engine: Engine) -> None:
