@@ -38,6 +38,19 @@ the [reliability contract](docs/reliability.md) for delivery semantics. Stop
 workers before schema upgrades; the [upgrade guide](docs/reliability-upgrade.md)
 includes migration checks and examples.
 
+Scheduling changes should preserve the original interval cadence and the
+documented latest-due policy. Cover transaction rollback, competing scheduler
+processes, paused schedules, and uniqueness of `(schedule_id, scheduled_for)`.
+Retries and lease recovery must retain the original task's occurrence identity.
+Use stored due times and the database clock to test boundaries without waiting
+for real intervals to pass.
+
+The scheduling suite reuses the worker suite's isolated-schema fixture.
+Keep PostgreSQL tests marked `integration` so the Windows unit-test job can
+exercise timestamp parsing and process behavior without a database. See the
+[scheduling design](docs/scheduling.md) and [upgrade guide](docs/scheduling-upgrade.md)
+when changing dispatch or its schema.
+
 Use `feat/short-name` for feature branches and `fix/short-name` for fixes.
 Keep commits focused and describe the change in a short subject line.
 
