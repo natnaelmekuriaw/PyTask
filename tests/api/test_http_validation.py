@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -96,3 +98,18 @@ def test_deep_arguments_are_rejected_before_database_access(client: TestClient) 
     error = response.json()["error"]
     assert error["code"] == "invalid_request"
     assert "nested too deeply" in error["details"][0]["message"]
+
+
+@pytest.mark.parametrize("action", ["pause", "resume"])
+@pytest.mark.parametrize(
+    "body,status", [(b'{"cancel_pending":true}', 422), (b"{", 400)]
+)
+def test_schedule_controls_validate_bodies_before_changing_state(
+    client: TestClient, action: str, body: bytes, status: int
+) -> None:
+    response = client.post(
+        f"/api/v1/schedules/{uuid4()}/{action}",
+        content=body,
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == status

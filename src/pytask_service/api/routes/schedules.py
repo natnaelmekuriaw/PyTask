@@ -8,7 +8,7 @@ from pytask_service.api.errors import APIError
 from pytask_service.api.schedule_queries import schedule_page
 from pytask_service.api.schemas.monitoring import ScheduleRead, TaskRead
 from pytask_service.api.schemas.pages import Page
-from pytask_service.api.schemas.schedules import ScheduleCreate
+from pytask_service.api.schemas.schedules import ScheduleControl, ScheduleCreate
 from pytask_service.api.task_queries import task_page
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import task_snapshot
@@ -98,7 +98,9 @@ def change_state(schedule_id: UUID, session: SessionDep, paused: bool) -> Schedu
     response_model=ScheduleRead,
     summary="Pause future dispatches",
 )
-def pause(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
+def pause(
+    schedule_id: UUID, session: SessionDep, body: ScheduleControl | None = None
+) -> ScheduleRead:
     return change_state(schedule_id, session, True)
 
 
@@ -107,7 +109,9 @@ def pause(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
     response_model=ScheduleRead,
     summary="Resume dispatch on the original cadence",
 )
-def resume(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
+def resume(
+    schedule_id: UUID, session: SessionDep, body: ScheduleControl | None = None
+) -> ScheduleRead:
     return change_state(schedule_id, session, False)
 
 

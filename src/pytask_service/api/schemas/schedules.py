@@ -3,9 +3,14 @@ from typing import Self
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
+from pytask_service.api.schemas.base import APIModel
 from pytask_service.api.schemas.inputs import TaskInput, timestamp_input
 from pytask_service.scheduling.definitions import validate_schedule_name
 from pytask_service.scheduling.interval import next_occurrence
+
+
+class ScheduleControl(APIModel):
+    pass
 
 
 class ScheduleCreate(TaskInput):
