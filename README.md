@@ -5,8 +5,8 @@ functions. It is being built around task claiming, retries, leases, and crash
 recovery.
 
 The current stage supports registering named functions, submitting tasks with
-JSON arguments, and reading their status. Submitted tasks stay pending until
-the worker engine is added in the next stage.
+JSON arguments, and running them in background worker processes. Multiple
+workers can safely claim tasks from the same PostgreSQL queue.
 
 ## Requirements
 
@@ -41,7 +41,8 @@ Run the checks with:
 .\.venv\Scripts\pytest -q
 ```
 
-The integration test runs when `PYTASK_DATABASE_URL` is set and skips otherwise.
+The PostgreSQL integration tests run when `PYTASK_DATABASE_URL` is set and skip
+otherwise. Run `alembic upgrade head` before the full test suite.
 
 ## Submit a task
 
@@ -85,15 +86,42 @@ Set `PYTASK_REGISTRY` to that module and attribute, such as
 the function signature and stores its name and arguments; it does not call the
 function.
 
+## Run a worker
+
+After submitting a task, process one queued task:
+
+```powershell
+.\.venv\Scripts\pytask-service worker --once
+```
+
+Run a continuous worker in a separate PowerShell window with both environment
+variables set:
+
+```powershell
+$env:PYTASK_DATABASE_URL = "postgresql+psycopg://pytask:pytask@localhost:15432/pytask"
+$env:PYTASK_REGISTRY = "pytask_service.example_tasks:registry"
+.\.venv\Scripts\pytask-service worker
+```
+
+Start the same command in another window to run a second worker. Each worker
+claims one task at a time. Press Ctrl+C to stop claiming new tasks; the worker
+waits for its current task to finish. Use `worker --poll-interval 1` to change
+the idle polling interval in seconds.
+
+The `status` command shows the current state, worker ID, result or error, and
+execution duration. Successful results must be JSON values no larger than
+64 KiB. A handler exception marks the task as failed.
+
 ## Planned milestones
 
-1. Register and submit named tasks with JSON arguments. **Current stage.**
-2. Claim and run tasks across multiple workers.
+1. Register and submit named tasks with JSON arguments. **Implemented.**
+2. Claim and run tasks across multiple workers. **Current stage.**
 3. Add retries, leases, crash recovery, and timeouts.
 4. Add delayed and recurring scheduling.
 5. Expose submission and monitoring through an API.
 
-PyTask will use at-least-once execution. Task handlers must be safe to run more
-than once; a worker may lose its lease after starting a task.
+This stage does not yet recover a task left `running` when its worker crashes.
+The reliability stage will add leases, recovery, retries, and an at-least-once
+delivery contract. Task handlers should be safe to run more than once.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.
