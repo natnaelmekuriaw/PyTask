@@ -1,13 +1,18 @@
 from collections.abc import Callable
 from threading import Event
+from typing import Protocol
 
-from pytask_service.worker.service import WorkedTask, Worker
+from pytask_service.worker.service import WorkedTask
+
+
+class TaskWorker(Protocol):
+    def run_once(self) -> WorkedTask | None: ...
 
 
 class WorkerLoop:
     def __init__(
         self,
-        worker: Worker,
+        worker: TaskWorker,
         *,
         poll_interval: float = 0.5,
         stop_event: Event | None = None,
