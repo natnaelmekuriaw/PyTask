@@ -41,3 +41,8 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+strict = true
