@@ -1,10 +1,11 @@
 import inspect
 from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from pytask_service.arguments import InvalidTaskArguments, normalize_arguments
-from pytask_service.db.models import Task, TaskStatus
+from pytask_service.db.models import Task, TaskAttempt, TaskStatus
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import TaskRegistry
 
@@ -34,3 +35,9 @@ def submit_task(
 
 def get_task(session: Session, task_id: UUID) -> Task | None:
     return session.get(Task, task_id)
+
+
+def list_attempts(session: Session, task_id: UUID) -> list[TaskAttempt]:
+    return list(session.scalars(
+        select(TaskAttempt).where(TaskAttempt.task_id == task_id).order_by(TaskAttempt.number)
+    ))
