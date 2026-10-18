@@ -5,7 +5,6 @@ Revises: 20261018_03
 """
 
 from collections.abc import Sequence
-from uuid import uuid4
 
 import sqlalchemy as sa
 from alembic import op
@@ -53,28 +52,21 @@ def upgrade() -> None:
 
 
 def _backfill_attempts() -> None:
-    connection = op.get_bind()
-    now = connection.scalar(sa.select(sa.func.clock_timestamp()))
-    rows = connection.execute(sa.text(
-        "SELECT id, status, worker_id, created_at, started_at, finished_at, error "
-        "FROM tasks WHERE status IN ('running', 'succeeded', 'failed')"
-    )).mappings()
-    for row in rows:
-        token = uuid4()
-        running = row["status"] == "running"
-        connection.execute(sa.text(
-            "INSERT INTO task_attempts "
-            "(id, task_id, number, worker_id, status, started_at, finished_at, error) "
-            "VALUES (:id, :task_id, 1, :worker, :status, :started, :finished, :error)"
-        ), {
-            "id": token, "task_id": row["id"], "worker": row["worker_id"] or "legacy",
-            "status": row["status"], "started": row["started_at"] or row["created_at"],
-            "finished": None if running else row["finished_at"] or now, "error": row["error"],
-        })
-        connection.execute(sa.text(
-            "UPDATE tasks SET attempt_count = 1, claim_token = :token, "
-            "lease_expires_at = :expires WHERE id = :id"
-        ), {"id": row["id"], "token": token if running else None, "expires": now if running else None})
+    op.execute("""
+        INSERT INTO task_attempts
+            (id, task_id, number, worker_id, status, started_at, finished_at, error)
+        SELECT gen_random_uuid(), id, 1, COALESCE(worker_id, 'legacy'), status,
+            COALESCE(started_at, created_at),
+            CASE WHEN status = 'running' THEN NULL ELSE COALESCE(finished_at, clock_timestamp()) END,
+            error
+        FROM tasks WHERE status IN ('running', 'succeeded', 'failed')
+    """)
+    op.execute("""
+        UPDATE tasks AS task SET attempt_count = 1,
+            claim_token = CASE WHEN task.status = 'running' THEN attempt.id END,
+            lease_expires_at = CASE WHEN task.status = 'running' THEN clock_timestamp() END
+        FROM task_attempts AS attempt WHERE attempt.task_id = task.id AND attempt.number = 1
+    """)
 
 
 def downgrade() -> None:
