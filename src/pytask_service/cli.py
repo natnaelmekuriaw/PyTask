@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from pathlib import Path
 from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,7 +21,11 @@ def main() -> int:
     commands.add_parser("check-db", help="Check the database connection")
     submit = commands.add_parser("submit", help="Queue a registered task")
     submit.add_argument("name", help="Registered task name")
-    submit.add_argument("--args", default="{}", help="JSON object of keyword arguments")
+    input_options = submit.add_mutually_exclusive_group()
+    input_options.add_argument(
+        "--args", default="{}", help="JSON object of keyword arguments"
+    )
+    input_options.add_argument("--args-file", type=Path, help="Read arguments from JSON")
     status = commands.add_parser("status", help="Show a task's current status")
     status.add_argument("id", type=UUID, help="Task ID")
     args = parser.parse_args()
@@ -39,7 +44,15 @@ def main() -> int:
         return 0
 
     if args.command == "submit":
-        return _submit(args.name, args.args)
+        if args.args_file is not None:
+            try:
+                raw_arguments = args.args_file.read_text(encoding="utf-8")
+            except (OSError, UnicodeError) as exc:
+                print(f"Cannot read argument file: {exc}", file=sys.stderr)
+                return 1
+        else:
+            raw_arguments = args.args
+        return _submit(args.name, raw_arguments)
     if args.command == "status":
         return _status(args.id)
 
