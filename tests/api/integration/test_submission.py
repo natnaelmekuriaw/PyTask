@@ -5,6 +5,8 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
+from sqlalchemy import event
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -41,3 +43,16 @@ def test_explicit_http_execution_policy_is_stored(submit: Callable[..., dict[str
         task = session.get(Task, UUID(created["id"]))
         assert task is not None
         assert (task.max_attempts, task.timeout_seconds, task.retry_base_seconds, task.retry_max_seconds) == (7, 12, 2, 20)
+
+
+def test_commit_failure_returns_an_error_and_rolls_back_submission(database_client: TestClient, isolated_engine: Engine) -> None:
+    def fail_commit(connection: object) -> None:
+        raise OperationalError("COMMIT", {}, RuntimeError("forced failure"))
+    event.listen(isolated_engine, "commit", fail_commit)
+    try:
+        response = database_client.post("/api/v1/tasks", json={"name": "math.add", "arguments": {"left": 1, "right": 2}})
+    finally:
+        event.remove(isolated_engine, "commit", fail_commit)
+    assert response.status_code == 503 and "location" not in response.headers
+    with Session(isolated_engine) as session:
+        assert session.scalar(select(func.count()).select_from(Task)) == 0
