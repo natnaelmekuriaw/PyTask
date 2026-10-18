@@ -27,3 +27,8 @@ def test_utc_suffix_and_fractional_seconds_are_preserved() -> None:
 def test_malformed_timestamps_have_a_clear_error(raw: str) -> None:
     with pytest.raises(ValueError, match="ISO 8601"):
         parse_timestamp(raw)
+
+
+def test_offset_conversion_cannot_overflow_the_utc_range() -> None:
+    with pytest.raises(ValueError, match="supported range"):
+        parse_timestamp("9999-12-31T23:59:59-01:00")
