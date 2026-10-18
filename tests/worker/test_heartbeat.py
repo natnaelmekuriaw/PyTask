@@ -35,3 +35,23 @@ def test_database_error_cancels_execution_with_its_cause() -> None:
         with pytest.raises(LostClaimError) as raised:
             keeper.raise_if_lost()
         assert isinstance(raised.value.__cause__, OSError)
+
+
+def test_stalled_renewal_is_cancelled_by_independent_watchdog() -> None:
+    entered = Event()
+    release = Event()
+
+    def stalled() -> bool:
+        entered.set()
+        release.wait(2)
+        return True
+
+    with LeaseKeeper(stalled, 0.01, lease_seconds=0.15) as keeper:
+        try:
+            assert entered.wait(1)
+            assert keeper.cancel_event.wait(1)
+        finally:
+            release.set()
+        with pytest.raises(LostClaimError):
+            keeper.raise_if_lost()
+    assert keeper.cancel_event.is_set()

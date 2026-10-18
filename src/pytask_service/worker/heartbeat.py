@@ -53,6 +53,8 @@ class LeaseKeeper:
 
     def _run(self) -> None:
         while not self._stop_event.wait(self._interval):
+            if self.cancel_event.is_set():
+                return
             started = monotonic()
             try:
                 if not self._renew():
