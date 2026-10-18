@@ -11,6 +11,7 @@ from pytask_service.api.routes import health, monitoring, schedules, tasks
 from pytask_service.api.schemas.errors import ErrorResponse
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
+from pytask_service.observability.logging import configure_logging
 from pytask_service.registry import TaskRegistry, load_registry
 
 
@@ -22,6 +23,7 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        configure_logging()
         configured = settings or Settings.from_env()
         handlers = registry
         if handlers is None:
