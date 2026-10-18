@@ -1,5 +1,5 @@
 import inspect
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
@@ -18,7 +18,9 @@ def submit_task(
     except TypeError as exc:
         raise InvalidTaskArguments(str(exc)) from exc
 
-    task = Task(name=name, arguments=normalized, status=TaskStatus.PENDING.value)
+    task = Task(
+        id=uuid4(), name=name, arguments=normalized, status=TaskStatus.PENDING.value
+    )
     session.add(task)
     session.flush()
     return task.id
