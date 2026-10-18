@@ -27,3 +27,13 @@ def test_dispatch_atomically_creates_a_task_and_advances_the_cursor(isolated_eng
         assert task.scheduled_for == schedule.last_scheduled_for == tasks[0].scheduled_for
         assert schedule.next_run_at == task.scheduled_for + timedelta(seconds=60)
         assert task.status == "pending" and task.attempt_count == 0
+
+
+def test_future_and_paused_schedules_do_not_dispatch(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    with Session(isolated_engine) as session:
+        future = database_now(session) + timedelta(days=1)
+    schedule_factory(start_at=future)
+    schedule_factory(paused=True)
+    with Session(isolated_engine) as session, session.begin():
+        assert dispatch_due(session) == []
+        assert session.scalar(select(func.count()).select_from(Task)) == 0
