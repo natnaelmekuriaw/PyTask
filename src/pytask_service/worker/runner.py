@@ -13,7 +13,7 @@ def run_in_process(
 ) -> TaskOutcome:
     context = context or multiprocessing.get_context("spawn")
     receiver, sender = context.Pipe(duplex=False)
-    process = context.Process(
+    process = context.Process(  # type: ignore[attr-defined]
         target=execute_child,
         args=(registry_path, task.name, task.arguments, sender),
     )
@@ -32,16 +32,22 @@ def run_in_process(
                 try:
                     outcome = receiver.recv()
                 except EOFError:
-                    outcome = TaskOutcome.process_exit(process.exitcode)
+                    process.join()
+                    return TaskOutcome.process_exit(process.exitcode)
                 process.join()
-                return outcome
+                if isinstance(outcome, TaskOutcome):
+                    return outcome
+                return TaskOutcome.process_exit(process.exitcode)
             if not process.is_alive():
                 process.join()
                 if receiver.poll():
                     try:
-                        return receiver.recv()
+                        outcome = receiver.recv()
                     except EOFError:
                         pass
+                    else:
+                        if isinstance(outcome, TaskOutcome):
+                            return outcome
                 return TaskOutcome.process_exit(process.exitcode)
     finally:
         receiver.close()
