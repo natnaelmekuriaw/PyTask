@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import UTC, datetime
 
 import pytest
 
@@ -85,3 +86,23 @@ def test_submit_stores_explicit_retry_and_timeout_policy() -> None:
     assert session.task.timeout_seconds == 10
     assert session.task.retry_base_seconds == 2
     assert session.task.retry_max_seconds == 20
+
+
+def test_submit_preserves_an_explicit_eligibility_time() -> None:
+    registry = TaskRegistry()
+    registry.register("noop", lambda: None)
+    session = RecordingSession()
+    when = datetime(2027, 1, 1, tzinfo=UTC)
+    submit_task(session, registry, "noop", {}, run_at=when)
+    assert session.task is not None
+    assert session.task.available_at == when
+    assert session.task.attempt_count == 0
+
+
+def test_submit_rejects_naive_eligibility_without_persisting() -> None:
+    registry = TaskRegistry()
+    registry.register("noop", lambda: None)
+    session = RecordingSession()
+    with pytest.raises(ValueError, match="UTC offset"):
+        submit_task(session, registry, "noop", {}, run_at=datetime(2027, 1, 1))
+    assert session.task is None
