@@ -1,16 +1,25 @@
 import argparse
+import json
 import sys
 
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
+from pytask_service.arguments import InvalidTaskArguments
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
+from pytask_service.db.models import TaskStatus
+from pytask_service.registry import UnknownTaskError, load_registry
+from pytask_service.tasks import submit_task
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pytask-service")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check-db", help="Check the database connection")
+    submit = commands.add_parser("submit", help="Queue a registered task")
+    submit.add_argument("name", help="Registered task name")
+    submit.add_argument("--args", default="{}", help="JSON object of keyword arguments")
     args = parser.parse_args()
 
     if args.command == "check-db":
@@ -26,7 +35,35 @@ def main() -> int:
         print("Database connection OK")
         return 0
 
+    if args.command == "submit":
+        return _submit(args.name, args.args)
+
     return 2
+
+
+def _submit(name: str, raw_arguments: str) -> int:
+    try:
+        settings = Settings.from_env()
+        if settings.registry_path is None:
+            raise ValueError("PYTASK_REGISTRY is required for submission")
+        registry = load_registry(settings.registry_path)
+        try:
+            arguments = json.loads(raw_arguments)
+        except json.JSONDecodeError as exc:
+            raise InvalidTaskArguments("--args must contain valid JSON") from exc
+
+        engine = build_engine(settings)
+        try:
+            with Session(engine) as session, session.begin():
+                task_id = submit_task(session, registry, name, arguments)
+        finally:
+            engine.dispose()
+    except (ValueError, TypeError, UnknownTaskError, SQLAlchemyError) as exc:
+        print(f"Task submission failed: {exc}", file=sys.stderr)
+        return 1
+
+    print(json.dumps({"id": str(task_id), "status": TaskStatus.PENDING.value}))
+    return 0
 
 
 if __name__ == "__main__":
