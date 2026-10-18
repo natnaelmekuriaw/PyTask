@@ -121,6 +121,14 @@ class TaskAttempt(Base):
 
 class Schedule(Base):
     __tablename__ = "schedules"
+    __table_args__ = (
+        UniqueConstraint("name", name="uq_schedules_name"),
+        CheckConstraint("interval_seconds BETWEEN 1 AND 31536000", name="ck_schedules_interval"),
+        CheckConstraint("max_attempts BETWEEN 1 AND 1000", name="ck_schedules_max_attempts"),
+        CheckConstraint("timeout_seconds > 0", name="ck_schedules_timeout"),
+        CheckConstraint("retry_base_seconds > 0 AND retry_max_seconds >= retry_base_seconds", name="ck_schedules_retry_delays"),
+        Index("ix_schedules_due", "paused", "next_run_at", "id"),
+    )
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
