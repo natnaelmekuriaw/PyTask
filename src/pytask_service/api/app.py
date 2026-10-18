@@ -7,6 +7,7 @@ from sqlalchemy.engine import Engine
 from pytask_service.api.body_limit import BodyLimitMiddleware
 from pytask_service.api.handlers import register_errors
 from pytask_service.api.resources import APIResources
+from pytask_service.api.request_logging import RequestLoggingMiddleware
 from pytask_service.api.routes import health, monitoring, schedules, tasks
 from pytask_service.api.schemas.errors import ErrorResponse
 from pytask_service.config import Settings
@@ -42,6 +43,7 @@ def create_app(
     app = FastAPI(title="PyTask API", version="1.0.0", lifespan=lifespan)
     register_errors(app)
     app.add_middleware(BodyLimitMiddleware)
+    app.add_middleware(RequestLoggingMiddleware)
     versioned = APIRouter(
         prefix="/api/v1",
         responses={

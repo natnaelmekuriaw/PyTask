@@ -96,4 +96,8 @@ def register_errors(app: FastAPI) -> None:
         logger.error(
             "Unhandled API failure", exc_info=(type(error), error, error.__traceback__)
         )
-        return error_response(500, "internal_error", "An internal error occurred")
+        request_id = request.scope.get("pytask.request_id")
+        headers = {"X-Request-ID": request_id} if request_id else None
+        return error_response(
+            500, "internal_error", "An internal error occurred", headers=headers
+        )
