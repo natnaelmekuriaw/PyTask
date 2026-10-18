@@ -19,3 +19,13 @@ def test_cursor_cannot_be_reused_with_different_filters() -> None:
         decode_cursor(cursor, cursor_scope("tasks", status="failed"))
     with pytest.raises(InvalidCursor):
         decode_cursor(cursor, cursor_scope("schedules", status="pending"))
+
+
+@pytest.mark.parametrize("raw", ["", "not.a.cursor", "é", "e30", "W10", "x" * 1025])
+def test_invalid_cursor_shapes_have_one_public_error(raw: str) -> None:
+    with pytest.raises(InvalidCursor, match="Invalid pagination cursor"):
+        decode_cursor(raw, cursor_scope("tasks"))
+
+
+def test_filter_scope_is_independent_of_keyword_order() -> None:
+    assert cursor_scope("tasks", status="pending", name="math.add") == cursor_scope("tasks", name="math.add", status="pending")
