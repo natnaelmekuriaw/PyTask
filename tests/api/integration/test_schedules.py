@@ -30,3 +30,12 @@ def test_http_pause_and_resume_preserve_cadence_and_are_idempotent(database_clie
     resumed = database_client.post(path + "/resume").json()
     assert not resumed["paused"]
     assert resumed["next_run_at"] == first["next_run_at"] == created["next_run_at"]
+
+
+def test_duplicate_schedule_name_returns_conflict_without_replacing_it(database_client: TestClient, schedule: Callable[..., dict[str, Any]]) -> None:
+    original = schedule(name="report")
+    response = database_client.post("/api/v1/schedules", json={"name": "report", "task_name": "math.add", "arguments": {"left": 3, "right": 4}, "interval_seconds": 120})
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "schedule_name_conflict"
+    saved = database_client.get(f"/api/v1/schedules/{original['id']}").json()
+    assert saved["arguments"] == original["arguments"] and saved["interval_seconds"] == 60
