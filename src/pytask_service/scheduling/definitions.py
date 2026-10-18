@@ -78,6 +78,7 @@ def set_paused(session: Session, schedule_id: UUID, paused: bool) -> Schedule:
     bound_transaction(session)
     schedule = session.scalar(
         select(Schedule).where(Schedule.id == schedule_id).with_for_update()
+        .execution_options(populate_existing=True)
     )
     if schedule is None:
         raise ValueError(f"Schedule not found: {schedule_id}")

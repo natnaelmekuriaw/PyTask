@@ -59,3 +59,17 @@ def test_duplicate_names_cannot_replace_existing_schedules(isolated_engine: Engi
         schedule_factory(name="daily-report")
     with Session(isolated_engine) as session:
         assert [schedule.id for schedule in list_schedules(session)] == [original]
+
+
+def test_resume_refreshes_a_definition_loaded_before_another_pause(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    schedule_id = schedule_factory()
+    with Session(isolated_engine) as older, older.begin():
+        loaded = get_schedule(older, schedule_id)
+        assert loaded is not None and not loaded.paused
+        with Session(isolated_engine) as newer, newer.begin():
+            set_paused(newer, schedule_id, True)
+        resumed = set_paused(older, schedule_id, False)
+        assert not resumed.paused
+    with Session(isolated_engine) as session:
+        saved = get_schedule(session, schedule_id)
+        assert saved is not None and not saved.paused

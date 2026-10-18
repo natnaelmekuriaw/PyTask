@@ -20,6 +20,7 @@ def dispatch_due(session: Session, *, batch_size: int = 100) -> list[ScheduledTa
         .order_by(Schedule.next_run_at, Schedule.id)
         .limit(batch_size)
         .with_for_update(skip_locked=True)
+        .execution_options(populate_existing=True)
     ).all()
     if not schedules:
         return []
