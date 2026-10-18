@@ -17,3 +17,10 @@ def due_occurrence(next_run_at: datetime, now: datetime, seconds: int) -> dateti
     if due > now:
         return None
     return due + ((now - due) // interval) * interval
+
+
+def next_occurrence(occurrence: datetime, seconds: int) -> datetime:
+    try:
+        return as_utc(occurrence) + timedelta(seconds=validate_interval(seconds))
+    except OverflowError as error:
+        raise ValueError("Next occurrence exceeds the supported timestamp range") from error
