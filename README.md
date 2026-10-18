@@ -8,6 +8,8 @@ JSON arguments, and running them in background worker processes. Multiple
 workers can safely claim tasks from the same PostgreSQL queue. Failed attempts
 use configurable backoff, and expired leases allow another worker to recover
 interrupted work. Every execution attempt has its own history record.
+Delayed tasks and fixed-interval schedules use the same queue and reliability
+policy.
 
 ## Requirements
 
@@ -45,9 +47,11 @@ Run the checks with:
 The PostgreSQL integration tests run when `PYTASK_DATABASE_URL` is set and skip
 otherwise. Run `alembic upgrade head` before the full test suite.
 
-If upgrading an existing worker-engine checkout, stop all workers before
-running the migration. Follow the [reliability upgrade guide](docs/reliability-upgrade.md)
-for the migration checks and retry/timeout examples.
+For an existing checkout, stop workers and schedulers before migrating.
+Follow the [scheduling upgrade guide](docs/scheduling-upgrade.md) for the
+current migration checks. When upgrading from the worker-engine stage, also
+read the [reliability upgrade guide](docs/reliability-upgrade.md) for its
+backfill behavior and retry/timeout examples.
 
 ## Submit a task
 
@@ -103,6 +107,17 @@ attempt. Retry delays use exponential backoff with full jitter. Handlers must
 tolerate repeated execution; see the [reliability contract](docs/reliability.md)
 for idempotency guidance.
 
+To make a task eligible later, add `--delay` in seconds:
+
+```powershell
+.\.venv\Scripts\pytask-service submit math.add --args-file examples/math-add.json --delay 30
+```
+
+Alternatively, use `--run-at` with an ISO 8601 timestamp containing a UTC
+offset. The two timing options are mutually exclusive. Delayed tasks use the
+existing queue and need only a worker; the execution timeout starts when the
+worker starts the task process.
+
 ## Run a worker
 
 After submitting a task, process one queued task:
@@ -144,12 +159,42 @@ budget is exhausted. Inspect the execution history with:
 See [Worker design](docs/worker-design.md) for claim, process, and finalization
 details.
 
+## Recurring schedules
+
+Create a named schedule using the example registry:
+
+```powershell
+.\.venv\Scripts\pytask-service schedule create minute-add math.add --args-file examples/math-add.json --every 60
+```
+
+Run a scheduler in a separate terminal with `PYTASK_DATABASE_URL` set:
+
+```powershell
+.\.venv\Scripts\pytask-service scheduler
+```
+
+Keep workers running to execute the tasks it enqueues. Schedulers can run
+concurrently; row locks and a unique occurrence key prevent duplicate
+submissions for the same schedule timestamp. After downtime, a schedule
+enqueues its latest due occurrence and skips older missed ones. Its cadence
+is preserved, and occurrences may overlap if earlier work is still running.
+
+Use `schedule list`, `schedule show ID`, `schedule history ID`, `schedule pause ID`,
+and `schedule resume ID` to manage definitions and inspect their tasks.
+`schedule create --paused` creates an inactive definition. All timestamps use
+explicit offsets and are normalized to UTC. Intervals are whole seconds;
+cron expressions and local calendar scheduling are planned separately.
+
+See the [scheduling commands](docs/scheduling-cli.md) and
+[design](docs/scheduling.md). Existing checkouts should follow the
+[scheduling upgrade guide](docs/scheduling-upgrade.md) before starting new code.
+
 ## Planned milestones
 
 1. Register and submit named tasks with JSON arguments. **Implemented.**
 2. Claim and run tasks across multiple workers. **Implemented.**
-3. Add retries, leases, crash recovery, and timeouts. **Current stage.**
-4. Add delayed and recurring scheduling.
+3. Add retries, leases, crash recovery, and timeouts. **Implemented.**
+4. Add delayed and recurring scheduling. **Current stage.**
 5. Expose submission and monitoring through an API.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.

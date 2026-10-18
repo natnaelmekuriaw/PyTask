@@ -1,16 +1,4 @@
-from datetime import datetime
+from pytask_service.db.clock import database_now as database_now
+from pytask_service.db.transactions import bound_transaction as bound_lease_transaction
 
-from sqlalchemy import func, select, text
-from sqlalchemy.orm import Session
-
-
-def database_now(session: Session) -> datetime:
-    value = session.scalar(select(func.clock_timestamp()))
-    if not isinstance(value, datetime):
-        raise RuntimeError("PostgreSQL did not return its current timestamp")
-    return value
-
-
-def bound_lease_transaction(session: Session) -> None:
-    session.execute(text("SET LOCAL lock_timeout = '2s'"))
-    session.execute(text("SET LOCAL statement_timeout = '5s'"))
+__all__ = ["database_now", "bound_lease_transaction"]

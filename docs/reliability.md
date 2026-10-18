@@ -61,3 +61,18 @@ lease deadline, and last error. `attempts TASK_ID` returns every attempt in
 number order with its worker, start and finish times, outcome, and error.
 Attempt outcomes are `running`, `succeeded`, `failed`, `timed_out`, or
 `abandoned`. A task can be `pending` while its last attempt is `failed`.
+
+## Scheduled work
+
+A recurring occurrence creates one task with a schedule ID and logical
+occurrence timestamp. Retries and lease recovery keep that same task ID and
+timestamp while adding execution attempts. The unique occurrence key prevents
+duplicate task submission; the worker's at-least-once contract still applies
+to its handler executions.
+
+Later occurrences can run while earlier ones are retrying or still executing.
+Pausing a schedule prevents future dispatches and leaves already queued tasks
+available to workers. If handler side effects correspond to a business
+period, include that period's identifier in the arguments and use it for
+idempotency. See [scheduling design](scheduling.md) for missed-run and overlap
+behavior.

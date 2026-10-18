@@ -20,6 +20,8 @@ def task_snapshot(task: Task) -> dict[str, object]:
         "error": task.error,
         "attempt_count": task.attempt_count,
         "max_attempts": task.max_attempts,
+        "schedule_id": str(task.schedule_id) if task.schedule_id else None,
+        "scheduled_for": task.scheduled_for.isoformat() if task.scheduled_for else None,
         "timeout_seconds": task.timeout_seconds,
         "available_at": task.available_at.isoformat() if task.available_at else None,
         "lease_expires_at": task.lease_expires_at.isoformat()

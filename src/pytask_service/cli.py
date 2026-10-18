@@ -1,19 +1,30 @@
 import argparse
 import json
 import sys
-from pathlib import Path
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from pytask_service.arguments import InvalidTaskArguments
+from pytask_service.cli_options import (
+    add_argument_options,
+    add_policy_options,
+    parse_arguments,
+    read_argument_text,
+    read_policy,
+)
+from pytask_service.cli_schedule import configure_schedule_parser, handle_schedule
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine, check_connection
 from pytask_service.db.models import TaskStatus
 from pytask_service.monitoring import attempt_snapshot, task_snapshot
 from pytask_service.policy import TaskPolicy
 from pytask_service.registry import UnknownTaskError, load_registry
+from pytask_service.scheduling.command import run_scheduler
+from pytask_service.scheduling.delay import validate_delay
+from pytask_service.scheduling.policy import SchedulerPolicy
+from pytask_service.scheduling.time import parse_timestamp
 from pytask_service.tasks import get_task, list_attempts, submit_task
 from pytask_service.worker.command import run_forever, run_one
 from pytask_service.worker.policy import WorkerPolicy
@@ -23,26 +34,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="pytask-service")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check-db", help="Check the database connection")
+    configure_schedule_parser(
+        commands.add_parser("schedule", help="Manage recurring schedules")
+    )
     submit = commands.add_parser("submit", help="Queue a registered task")
     submit.add_argument("name", help="Registered task name")
-    input_options = submit.add_mutually_exclusive_group()
-    input_options.add_argument(
-        "--args", default="{}", help="JSON object of keyword arguments"
+    add_argument_options(submit)
+    add_policy_options(submit)
+    timing = submit.add_mutually_exclusive_group()
+    timing.add_argument(
+        "--run-at", type=parse_timestamp, help="ISO 8601 timestamp with UTC offset"
     )
-    input_options.add_argument(
-        "--args-file", type=Path, help="Read arguments from JSON"
-    )
-    submit.add_argument(
-        "--max-attempts", type=int, default=3, help="Total attempts including the first"
-    )
-    submit.add_argument(
-        "--timeout", type=float, default=300, help="Execution deadline in seconds"
-    )
-    submit.add_argument(
-        "--retry-base", type=float, default=1, help="Initial retry backoff in seconds"
-    )
-    submit.add_argument(
-        "--retry-max", type=float, default=60, help="Maximum retry backoff in seconds"
+    timing.add_argument(
+        "--delay", type=float, help="Seconds before the task becomes eligible"
     )
     status = commands.add_parser("status", help="Show a task's current status")
     status.add_argument("id", type=UUID, help="Task ID")
@@ -59,7 +63,25 @@ def main() -> int:
     worker.add_argument(
         "--heartbeat-seconds", type=float, default=10, help="Lease renewal interval"
     )
+    scheduler = commands.add_parser("scheduler", help="Enqueue due recurring tasks")
+    scheduler.add_argument(
+        "--once", action="store_true", help="Dispatch at most one batch"
+    )
+    scheduler.add_argument("--batch-size", type=int, default=100)
+    scheduler.add_argument("--poll-interval", type=float, default=1)
     args = parser.parse_args()
+
+    if args.command == "schedule":
+        return handle_schedule(args)
+    if args.command == "scheduler":
+        try:
+            scheduler_policy = SchedulerPolicy(args.batch_size, args.poll_interval)
+            return run_scheduler(
+                Settings.from_env(), once=args.once, policy=scheduler_policy
+            )
+        except (ValueError, TypeError, RuntimeError, SQLAlchemyError) as error:
+            print(f"Scheduler failed: {error}", file=sys.stderr)
+            return 1
 
     if args.command == "check-db":
         try:
@@ -75,22 +97,21 @@ def main() -> int:
         return 0
 
     if args.command == "submit":
-        if args.args_file is not None:
-            try:
-                raw_arguments = args.args_file.read_text(encoding="utf-8")
-            except (OSError, UnicodeError) as exc:
-                print(f"Cannot read argument file: {exc}", file=sys.stderr)
-                return 1
-        else:
-            raw_arguments = args.args
         try:
-            policy = TaskPolicy(
-                args.max_attempts, args.timeout, args.retry_base, args.retry_max
-            )
+            raw_arguments = read_argument_text(args)
+        except (OSError, UnicodeError) as exc:
+            print(f"Cannot read argument file: {exc}", file=sys.stderr)
+            return 1
+        try:
+            policy = read_policy(args)
+            if args.delay is not None:
+                validate_delay(args.delay)
         except ValueError as exc:
             print(f"Task submission failed: {exc}", file=sys.stderr)
             return 1
-        return _submit(args.name, raw_arguments, policy)
+        return _submit(
+            args.name, raw_arguments, policy, run_at=args.run_at, delay=args.delay
+        )
     if args.command == "status":
         return _inspect_task(args.id, history=False)
     if args.command == "attempts":
@@ -109,21 +130,33 @@ def main() -> int:
     return 2
 
 
-def _submit(name: str, raw_arguments: str, policy: TaskPolicy | None = None) -> int:
+def _submit(
+    name: str,
+    raw_arguments: str,
+    policy: TaskPolicy | None = None,
+    *,
+    run_at: datetime | None = None,
+    delay: float | None = None,
+) -> int:
     try:
         settings = Settings.from_env()
         if settings.registry_path is None:
             raise ValueError("PYTASK_REGISTRY is required for submission")
         registry = load_registry(settings.registry_path)
-        try:
-            arguments = json.loads(raw_arguments)
-        except json.JSONDecodeError as exc:
-            raise InvalidTaskArguments("--args must contain valid JSON") from exc
+        arguments = parse_arguments(raw_arguments)
 
         engine = build_engine(settings)
         try:
             with Session(engine) as session, session.begin():
-                task_id = submit_task(session, registry, name, arguments, policy=policy)
+                task_id = submit_task(
+                    session,
+                    registry,
+                    name,
+                    arguments,
+                    policy=policy,
+                    run_at=run_at,
+                    delay=delay,
+                )
         finally:
             engine.dispose()
     except (ValueError, TypeError, UnknownTaskError, SQLAlchemyError) as exc:
