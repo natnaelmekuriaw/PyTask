@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -30,3 +31,13 @@ def test_newer_insertions_do_not_repeat_or_shift_older_pages(database_client: Te
     remaining = database_client.get("/api/v1/tasks", params={"limit": 100, "cursor": first["next_cursor"]}).json()
     seen = [item["id"] for item in first["items"] + remaining["items"]]
     assert set(seen) == original and len(seen) == 3 and newest not in seen
+
+
+def test_task_filters_combine_status_and_registered_name(database_client: TestClient, isolated_engine: Engine, submit: Callable[..., dict[str, Any]]) -> None:
+    succeeded = submit()["id"]
+    pending = submit()["id"]
+    submit(name="demo.greet", arguments={"name": "reader"})
+    with Session(isolated_engine) as session, session.begin():
+        session.execute(update(Task).where(Task.id == UUID(succeeded)).values(status="succeeded", result=3))
+    page = database_client.get("/api/v1/tasks", params={"status": "pending", "name": "math.add"}).json()
+    assert [item["id"] for item in page["items"]] == [pending]
