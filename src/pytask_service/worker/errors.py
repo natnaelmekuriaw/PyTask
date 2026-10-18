@@ -1,0 +1,2 @@
+class LostClaimError(RuntimeError):
+    pass

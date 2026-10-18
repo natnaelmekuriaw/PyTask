@@ -5,11 +5,8 @@ from sqlalchemy.orm import Session
 
 from pytask_service.db.models import Task, TaskStatus
 from pytask_service.worker.claim import ClaimedTask
+from pytask_service.worker.errors import LostClaimError
 from pytask_service.worker.outcome import TaskOutcome
-
-
-class LostClaimError(RuntimeError):
-    pass
 
 
 def finish_task(session: Session, claim: ClaimedTask, outcome: TaskOutcome) -> None:
