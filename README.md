@@ -189,12 +189,35 @@ See the [scheduling commands](docs/scheduling-cli.md) and
 [design](docs/scheduling.md). Existing checkouts should follow the
 [scheduling upgrade guide](docs/scheduling-upgrade.md) before starting new code.
 
+## HTTP API
+
+The FastAPI service exposes versioned task submission, monitoring, and
+schedule management under `/api/v1`. It reuses the same queue and execution
+policies as the CLI. Workers and schedulers run as separate processes.
+
+In a terminal with `PYTASK_DATABASE_URL` and `PYTASK_REGISTRY` set, start it on
+localhost:
+
+```powershell
+.\.venv\Scripts\python -m uvicorn pytask_service.api.app:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000/docs` for interactive documentation. Submit named
+tasks with `POST /api/v1/tasks`, inspect them with `GET /api/v1/tasks/{id}`,
+and read execution history at `/api/v1/tasks/{id}/attempts`. Collection reads
+support bounded pagination and filters. Schedule endpoints create, inspect,
+pause, resume, and list recurring work.
+
+See [PowerShell examples](docs/api-examples.md), the [API contract](docs/api-contract.md),
+and [operation notes](docs/api-operations.md). This stage has no authentication;
+keep the server bound to localhost until access control is added.
+
 ## Planned milestones
 
 1. Register and submit named tasks with JSON arguments. **Implemented.**
 2. Claim and run tasks across multiple workers. **Implemented.**
 3. Add retries, leases, crash recovery, and timeouts. **Implemented.**
-4. Add delayed and recurring scheduling. **Current stage.**
-5. Expose submission and monitoring through an API.
+4. Add delayed and recurring scheduling. **Implemented.**
+5. Expose submission and monitoring through an API. **Current stage.**
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.
