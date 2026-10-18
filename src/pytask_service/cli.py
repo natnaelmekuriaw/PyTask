@@ -25,7 +25,9 @@ def main() -> int:
     input_options.add_argument(
         "--args", default="{}", help="JSON object of keyword arguments"
     )
-    input_options.add_argument("--args-file", type=Path, help="Read arguments from JSON")
+    input_options.add_argument(
+        "--args-file", type=Path, help="Read arguments from JSON"
+    )
     status = commands.add_parser("status", help="Show a task's current status")
     status.add_argument("id", type=UUID, help="Task ID")
     args = parser.parse_args()

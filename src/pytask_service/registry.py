@@ -3,7 +3,6 @@ import inspect
 import re
 from collections.abc import Callable
 
-
 TaskHandler = Callable[..., object]
 _TASK_NAME = re.compile(r"[a-z][a-z0-9_.-]{0,127}\Z")
 

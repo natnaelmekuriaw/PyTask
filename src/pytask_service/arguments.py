@@ -2,7 +2,6 @@ import json
 import math
 from typing import cast
 
-
 MAX_ARGUMENT_BYTES = 64 * 1024
 MAX_ARGUMENT_DEPTH = 32
 

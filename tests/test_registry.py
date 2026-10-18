@@ -41,7 +41,7 @@ def test_registry_can_be_loaded_from_module(
 ) -> None:
     module = ModuleType("sample_registry")
     registry = TaskRegistry()
-    setattr(module, "registry", registry)
+    module.registry = registry
     monkeypatch.setitem(sys.modules, module.__name__, module)
 
     assert load_registry("sample_registry:registry") is registry
