@@ -15,11 +15,6 @@ class BodyLimitMiddleware:
             await self.app(scope, receive, send)
             return
         headers = dict(scope.get("headers", []))
-        if scope["method"] in {"POST", "PUT", "PATCH"}:
-            media_type = headers.get(b"content-type", b"").split(b";", 1)[0].strip().lower()
-            if media_type != b"application/json" and not (media_type.startswith(b"application/") and media_type.endswith(b"+json")):
-                await error_response(415, "unsupported_media_type", "Use an application/json request body")(scope, receive, send)
-                return
         length = headers.get(b"content-length")
         if length is not None:
             try:
@@ -32,7 +27,7 @@ class BodyLimitMiddleware:
             if declared > self.max_bytes:
                 await self._too_large(scope, receive, send)
                 return
-        chunks = []
+        body = bytearray()
         size = 0
         while True:
             message = await receive()
@@ -43,15 +38,20 @@ class BodyLimitMiddleware:
             if size > self.max_bytes:
                 await self._too_large(scope, receive, send)
                 return
-            chunks.append(chunk)
+            body.extend(chunk)
             if not message.get("more_body", False):
                 break
+        if size and scope["method"] in {"POST", "PUT", "PATCH"}:
+            media_type = headers.get(b"content-type", b"").split(b";", 1)[0].strip().lower()
+            if media_type != b"application/json" and not (media_type.startswith(b"application/") and media_type.endswith(b"+json")):
+                await error_response(415, "unsupported_media_type", "Use an application/json request body")(scope, receive, send)
+                return
         delivered = False
         async def replay() -> Message:
             nonlocal delivered
             if not delivered:
                 delivered = True
-                return {"type": "http.request", "body": b"".join(chunks), "more_body": False}
+                return {"type": "http.request", "body": bytes(body), "more_body": False}
             return await receive()
         await self.app(scope, replay, send)
 
