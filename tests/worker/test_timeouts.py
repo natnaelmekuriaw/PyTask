@@ -18,3 +18,13 @@ def test_timeout_stops_and_reaps_the_child() -> None:
     assert outcome.timed_out
     assert monotonic() - started < 8
     assert {child.pid for child in multiprocessing.active_children()} == before
+
+
+def test_deadline_still_applies_after_result_is_sent() -> None:
+    task = ClaimedTask(
+        uuid4(), "test.linger", {}, "worker-one", timeout_seconds=0.5
+    )
+
+    outcome = run_in_process("tests.worker.sample_tasks:registry", task)
+
+    assert outcome.timed_out
