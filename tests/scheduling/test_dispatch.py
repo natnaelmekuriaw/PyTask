@@ -83,3 +83,14 @@ def test_schedule_history_is_scoped_and_newest_first(isolated_engine: Engine, sc
         rows = list_occurrences(session, schedule_id, limit=1)
         assert len(rows) == 1 and rows[0].schedule_id == schedule_id
         assert len(list_occurrences(session, other_id)) == 1
+
+
+def test_batch_limit_leaves_remaining_schedules_for_the_next_tick(isolated_engine: Engine, schedule_factory: Callable[..., UUID]) -> None:
+    for _ in range(3):
+        schedule_factory()
+    with Session(isolated_engine) as session, session.begin():
+        first = dispatch_due(session, batch_size=2)
+    with Session(isolated_engine) as session, session.begin():
+        second = dispatch_due(session, batch_size=2)
+    assert len(first) == 2 and len(second) == 1
+    assert len({task.schedule_id for task in [*first, *second]}) == 3
