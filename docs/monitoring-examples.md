@@ -26,16 +26,27 @@ It needs database access, but no registry, API process, worker, or scheduler.
 The window changes attempt observations; it does not limit queue counts to
 recently created tasks.
 
-If the API is already running, read the same summary through HTTP:
+If the API is already running, use a key with `monitoring:read`. Load the token
+from the [authentication acceptance setup](authentication-verification.md):
 
 ```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/v1/monitoring?window_seconds=300"
+$token = (Get-Content -Raw .secrets/local-token.txt).Trim()
+```
+
+```powershell
+$headers = @{ Authorization = "Bearer $token" }
+```
+
+Read the same summary through HTTP:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/api/v1/monitoring?window_seconds=300" -Headers $headers
 ```
 
 To retain the response headers, including its request ID:
 
 ```powershell
-Invoke-WebRequest "http://127.0.0.1:8000/api/v1/monitoring?window_seconds=300"
+Invoke-WebRequest "http://127.0.0.1:8000/api/v1/monitoring?window_seconds=300" -Headers $headers
 ```
 
 Inspect an individual task's attempt history using its actual ID:
