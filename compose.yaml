@@ -1,14 +1,130 @@
+x-application: &application
+  image: ${PYTASK_IMAGE:-pytask:local}
+  build:
+    context: .
+    target: runtime
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  environment: &application-environment
+    PYTASK_DATABASE_URL: ${PYTASK_CONTAINER_DATABASE_URL:-postgresql+psycopg://pytask:pytask@postgres:5432/pytask}
+    PYTASK_LOG_LEVEL: ${PYTASK_LOG_LEVEL:-INFO}
+    PYTASK_DB_POOL_SIZE: "2"
+    PYTASK_DB_MAX_OVERFLOW: "0"
+    PYTASK_DB_POOL_TIMEOUT: "5"
+    PYTASK_DB_CONNECT_TIMEOUT: "5"
+  depends_on:
+    postgres:
+      condition: service_healthy
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
+  api:
+    <<: *application
+    profiles: [runtime]
+    command: [api]
+    pids_limit: 128
+    mem_limit: ${PYTASK_API_MEMORY:-512m}
+    restart: "on-failure:3"
+    environment:
+      <<: *application-environment
+      PYTASK_REGISTRY: ${PYTASK_REGISTRY:-pytask_service.example_tasks:registry}
+      PYTASK_DB_POOL_SIZE: ${PYTASK_API_DB_POOL_SIZE:-5}
+      PYTASK_DB_MAX_OVERFLOW: ${PYTASK_API_DB_MAX_OVERFLOW:-5}
+      PYTASK_API_GRACEFUL_SECONDS: ${PYTASK_API_GRACEFUL_SECONDS:-30}
+      PYTASK_API_CONCURRENCY: ${PYTASK_API_CONCURRENCY:-100}
+    ports:
+      - "127.0.0.1:${PYTASK_HTTP_PORT:-8000}:8000"
+    stop_grace_period: ${PYTASK_API_STOP_GRACE:-45s}
+    healthcheck:
+      test: [CMD, python, -m, pytask_service.runtime, probe, api]
+      interval: 30s
+      timeout: 8s
+      start_period: 15s
+      retries: 3
+
+  worker:
+    <<: *application
+    profiles: [runtime]
+    command: [worker]
+    pids_limit: 128
+    mem_limit: ${PYTASK_WORKER_MEMORY:-512m}
+    restart: "on-failure:3"
+    environment:
+      <<: *application-environment
+      PYTASK_REGISTRY: ${PYTASK_REGISTRY:-pytask_service.example_tasks:registry}
+      PYTASK_WORKER_POLL_SECONDS: ${PYTASK_WORKER_POLL_SECONDS:-0.5}
+      PYTASK_WORKER_LEASE_SECONDS: ${PYTASK_WORKER_LEASE_SECONDS:-30}
+      PYTASK_WORKER_HEARTBEAT_SECONDS: ${PYTASK_WORKER_HEARTBEAT_SECONDS:-10}
+    stop_grace_period: ${PYTASK_WORKER_STOP_GRACE:-330s}
+    healthcheck:
+      test: [CMD, python, -m, pytask_service.runtime, probe, database]
+      interval: 30s
+      timeout: 12s
+      start_period: 15s
+      retries: 3
+
+  scheduler:
+    <<: *application
+    profiles: [runtime]
+    command: [scheduler]
+    pids_limit: 64
+    mem_limit: ${PYTASK_SCHEDULER_MEMORY:-256m}
+    restart: "on-failure:3"
+    environment:
+      <<: *application-environment
+      PYTASK_DB_POOL_SIZE: "1"
+      PYTASK_SCHEDULER_BATCH_SIZE: ${PYTASK_SCHEDULER_BATCH_SIZE:-100}
+      PYTASK_SCHEDULER_POLL_SECONDS: ${PYTASK_SCHEDULER_POLL_SECONDS:-1}
+    stop_grace_period: ${PYTASK_SCHEDULER_STOP_GRACE:-15s}
+    healthcheck:
+      test: [CMD, python, -m, pytask_service.runtime, probe, database]
+      interval: 30s
+      timeout: 12s
+      start_period: 15s
+      retries: 3
+
+  migrate:
+    <<: *application
+    profiles: [tools]
+    command: [migrate]
+    pids_limit: 64
+    mem_limit: 256m
+    restart: "no"
+    environment:
+      <<: *application-environment
+      PYTASK_DB_POOL_SIZE: "1"
+    stop_grace_period: 30s
+
+  ops:
+    <<: *application
+    profiles: [tools]
+    command: [cli, --help]
+    pids_limit: 64
+    mem_limit: 256m
+    restart: "no"
+    environment:
+      <<: *application-environment
+      PYTASK_REGISTRY: ${PYTASK_REGISTRY:-pytask_service.example_tasks:registry}
+
   postgres:
+    restart: "on-failure:3"
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: pytask
-      POSTGRES_USER: pytask
-      POSTGRES_PASSWORD: pytask
+      POSTGRES_DB: ${POSTGRES_DB:-pytask}
+      POSTGRES_USER: ${POSTGRES_USER:-pytask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pytask}
     ports:
-      - "127.0.0.1:15432:5432"
+      - "127.0.0.1:${PYTASK_POSTGRES_PORT:-15432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pytask -d pytask"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 2s
       timeout: 2s
       retries: 10

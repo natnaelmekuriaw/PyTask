@@ -86,7 +86,20 @@ be isolated across concurrent requests, and route labels must use declared
 templates. Do not add raw URLs, SQL, handler payloads, or exception text to
 service event fields. Keep CLI stdout parseable.
 
-Keep commits focused and describe the change in a short subject line.
+Deployment changes must preserve explicit migrations, read-only startup
+checks, role-specific configuration, and literal process arguments. Keep
+credentials out of arguments, settings reprs, build contexts, and diagnostics.
+Cover failed preflight and cleanup paths when changing startup behavior.
+
+Use the [deployment acceptance guide](docs/deployment-verification.md) for
+image and Compose changes. Health labels must describe the checks actually
+performed; dependency readiness is not proof of worker progress. Check the
+shutdown budget against the workload's task timeout before changing defaults.
+Use runtime constraints for CI and image builds, and review their dependency
+updates as a coherent set. Docker commands and image publication are separate
+actions; a successful unit suite does not establish a successful image build.
+
+Keep commits focused and describe the change in a short, lower-case subject line.
 
 ## Pull requests
 

@@ -1,11 +1,11 @@
 import json
-import re
 import sys
 
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from pytask_service.config import Settings
+from pytask_service.db.diagnostics import postgres_state
 from pytask_service.db.engine import build_engine
 from pytask_service.observability.serialization import snapshot_payload
 from pytask_service.observability.service import read_snapshot
@@ -35,8 +35,8 @@ def show_stats(window_seconds: int) -> int:
 
 
 def _database_hint(error: SQLAlchemyError) -> str:
-    state = getattr(getattr(error, "orig", None), "sqlstate", None)
-    if isinstance(state, str):
+    state = postgres_state(error)
+    if state is not None:
         if state in {"42P01", "42703"}:
             return (
                 "Monitoring tables or columns are missing; "
@@ -52,8 +52,7 @@ def _database_hint(error: SQLAlchemyError) -> str:
             )
         if state == "55P03":
             return "The statistics query could not acquire a database lock in time."
-        if re.fullmatch(r"[0-9A-Z]{5}", state):
-            return f"PostgreSQL rejected the statistics query (SQLSTATE {state})."
+        return f"PostgreSQL rejected the statistics query (SQLSTATE {state})."
     if isinstance(error, OperationalError):
         return (
             "Database operation failed; run pytask-service check-db in this terminal."

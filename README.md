@@ -22,7 +22,7 @@ The commands below use PowerShell. From the repository root:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python -m pip install -e ".[dev]"
+.\.venv\Scripts\python -m pip install -c constraints/runtime.txt -e ".[dev]"
 docker compose up -d postgres
 $env:PYTASK_DATABASE_URL = "postgresql+psycopg://pytask:pytask@localhost:15432/pytask"
 .\.venv\Scripts\pytask-service check-db
@@ -234,6 +234,24 @@ See the [definitions](docs/monitoring.md), [PowerShell examples](docs/monitoring
 [event reference](docs/operational-logs.md), [troubleshooting](docs/monitoring-troubleshooting.md),
 and [crash recovery demonstration](docs/monitoring-demo.md).
 
+## Container setup
+
+The [deployment guide](docs/deployment.md) builds one application image and
+runs the API, workers, and scheduler through the `runtime` Compose profile.
+Database migrations stay an explicit one-off operation. With no profile,
+the existing database-only Compose workflow remains available.
+
+The runtime checks registry requirements and database revision compatibility
+before starting a service. The image uses an unprivileged user; Compose adds
+a read-only root filesystem, bounded temporary storage, resource limits,
+role-specific probes, and shutdown grace periods.
+
+See the [configuration reference](docs/deployment-configuration.md),
+[secret files](docs/deployment-secrets.md), [handler image example](docs/deployment-handlers.md),
+and [verification steps](docs/deployment-verification.md). Build and run these
+checks manually before pushing a deployment change. This stage adds no new
+database revision and does not publish an image or expose an authenticated API.
+
 ## Milestones
 
 1. Register and submit named tasks with JSON arguments. **Implemented.**
@@ -242,5 +260,6 @@ and [crash recovery demonstration](docs/monitoring-demo.md).
 4. Add delayed and recurring scheduling. **Implemented.**
 5. Expose submission and monitoring through an API. **Implemented.**
 6. Add operational summaries and structured events. **Implemented.**
+7. Package services and define deployment operations. **Implemented.**
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.

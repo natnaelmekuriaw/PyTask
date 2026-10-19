@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: ./examples/container
+      dockerfile: Dockerfile
+    image: pytask-handlers:local
+    environment:
+      PYTASK_REGISTRY: handlers:registry
+  worker:
+    build:
+      context: ./examples/container
+      dockerfile: Dockerfile
+    image: pytask-handlers:local
+    environment:
+      PYTASK_REGISTRY: handlers:registry
+  scheduler:
+    build:
+      context: ./examples/container
+      dockerfile: Dockerfile
+    image: pytask-handlers:local
+  ops:
+    build:
+      context: ./examples/container
+      dockerfile: Dockerfile
+    image: pytask-handlers:local
+    environment:
+      PYTASK_REGISTRY: handlers:registry
