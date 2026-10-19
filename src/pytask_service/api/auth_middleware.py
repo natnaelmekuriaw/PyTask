@@ -70,6 +70,7 @@ class AuthenticationMiddleware:
                 )
                 return
             if Permission.DOCS_READ not in principal.permissions:
+                log_event(logger, "auth.denied", credential_id=principal.key_id)
                 denied = permission_error({Permission.DOCS_READ})
                 await error_response(
                     denied.status, denied.code, denied.message, headers=denied.headers

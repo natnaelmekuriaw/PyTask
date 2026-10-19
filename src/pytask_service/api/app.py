@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -17,7 +18,10 @@ from pytask_service.auth.store import KeyStore
 from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
 from pytask_service.observability.logging import configure_logging
+from pytask_service.observability.events import log_event
 from pytask_service.registry import TaskRegistry, load_registry
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(
@@ -47,6 +51,11 @@ def create_app(
         app.state.auth_settings = authentication
         app.state.auth_store = store
         try:
+            log_event(
+                logger, "auth.configured",
+                level=logging.WARNING if authentication.mode is AuthMode.DISABLED else logging.INFO,
+                status=authentication.mode.value, count=len(authentication.keys),
+            )
             yield
         finally:
             del app.state.resources
