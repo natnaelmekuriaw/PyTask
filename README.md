@@ -247,6 +247,16 @@ and [crash recovery demonstration](docs/monitoring-demo.md).
 
 ## Container setup
 
+Run the complete local acceptance sequence with Docker Desktop running:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1
+```
+
+It sets up API keys, builds and starts containers, applies migrations, runs
+the final checks and full test suite, and verifies authenticated task execution.
+See the [runner options](docs/authentication-verification.md#run-everything-with-one-command).
+
 The [deployment guide](docs/deployment.md) builds one application image and
 runs the API, workers, and scheduler through the `runtime` Compose profile.
 Database migrations stay an explicit one-off operation. With no profile,
