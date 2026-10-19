@@ -41,3 +41,25 @@ def test_lost_create_commit_still_attempts_safe_cleanup():
     )
     assert drop.if_exists is True
     assert drop.element == database.schema
+
+
+def test_failed_scope_check_prevents_table_creation_and_drops_owned_schema(monkeypatch):
+    admin, engine, metadata = MagicMock(), MagicMock(), MagicMock()
+    monkeypatch.setattr(module, "scoped_engine", lambda *_: engine)
+    monkeypatch.setattr(
+        module, "check_scope", MagicMock(side_effect=RuntimeError("scope"))
+    )
+    monkeypatch.setattr(module.Task, "metadata", metadata)
+    database = module.BenchmarkDatabase(admin, Settings("unused"))
+    with pytest.raises(RuntimeError, match="scope"):
+        database.__enter__()
+    metadata.create_all.assert_not_called()
+    engine.dispose.assert_called_once()
+    connection = admin.begin.return_value.__enter__.return_value
+    drops = [
+        call.args[0]
+        for call in connection.execute.call_args_list
+        if isinstance(call.args[0], DropSchema)
+    ]
+    assert len(drops) == 1
+    assert drops[0].element == database.schema
