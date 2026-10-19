@@ -3,6 +3,11 @@
 Run these checks after reviewing the branch. Commands are separate PowerShell
 steps. Docker operations, database operations, and the full suite are manual.
 
+For a complete current startup sequence, use the
+[authentication acceptance guide](authentication-verification.md). It includes
+key generation, the authentication overlay, a 401 check, and task execution.
+Stop API, worker, and scheduler processes before running the full test suite.
+
 ## Host checks
 
 Refresh the editable installation with the runtime constraints:
@@ -61,16 +66,26 @@ Read readiness from the host:
 Invoke-RestMethod "http://127.0.0.1:8000/health/ready"
 ```
 
-Submit the registered example through the API:
+Load the token from the authentication acceptance setup:
 
 ```powershell
-$task = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/api/v1/tasks" -ContentType "application/json" -InFile .\examples\api\task.json
+$token = (Get-Content -Raw .secrets/local-token.txt).Trim()
 ```
 
-Inspect it after the worker has had time to claim it:
+```powershell
+$headers = @{ Authorization = "Bearer $token" }
+```
+
+Submit the registered example through the API with `tasks:submit`:
 
 ```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/v1/tasks/$($task.id)"
+$task = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/api/v1/tasks" -Headers $headers -ContentType "application/json" -InFile .\examples\api\task.json
+```
+
+Inspect it with `tasks:read` after the worker has had time to claim it:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/api/v1/tasks/$($task.id)" -Headers $headers
 ```
 
 The task should reach succeeded with result 3. Inspect its attempt history
