@@ -65,7 +65,12 @@ def validate_results(
     items: tuple[WorkItem, ...], identities: tuple[UUID, ...], observed: Observation
 ) -> None:
     actual = {task.id: task.result for task in observed.tasks}
-    if len(items) != len(identities) or set(actual) != set(identities):
+    if (
+        len(items) != len(identities)
+        or len(set(identities)) != len(identities)
+        or len(actual) != len(observed.tasks)
+        or set(actual) != set(identities)
+    ):
         raise BenchmarkFailure("invalid_result_population")
     for task_id, item in zip(identities, items, strict=True):
         value = actual[task_id]
