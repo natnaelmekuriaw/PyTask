@@ -15,6 +15,10 @@ RUN python -m pip wheel --only-binary=:all: --wheel-dir /wheels \
     --find-links=/wheels pytask-service
 
 FROM ${PYTHON_IMAGE} AS runtime
+LABEL org.opencontainers.image.title="PyTask" \
+    org.opencontainers.image.description="PostgreSQL-backed Python task execution" \
+    org.opencontainers.image.source="https://github.com/natnaelmekuriaw/PyTask" \
+    org.opencontainers.image.licenses="MIT"
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
