@@ -81,6 +81,8 @@ MOCK_FLOW = r"""
 $ErrorActionPreference = 'Stop'
 $script:calls = [Collections.Generic.List[string]]::new()
 $script:requests = [Collections.Generic.List[string]]::new()
+$script:benchmarkArguments = @()
+$script:benchmarkDatabase = $null
 $originalLocation = (Get-Location).Path
 $env:PYTASK_DATABASE_URL = 'previous-url'
 $env:PYTASK_DATABASE_URL_FILE = 'previous-file'
@@ -191,12 +193,8 @@ try {
     database=if (Get-Variable testDatabase -Scope Script -ErrorAction Ignore) {
         $script:testDatabase
     } else { $null }
-    benchmarkArguments=if (Get-Variable benchmarkArguments -Scope Script -ErrorAction Ignore) {
-        @($script:benchmarkArguments)
-    } else { @() }
-    benchmarkDatabase=if (Get-Variable benchmarkDatabase -Scope Script -ErrorAction Ignore) {
-        $script:benchmarkDatabase
-    } else { $null }
+    benchmarkArguments=@($script:benchmarkArguments)
+    benchmarkDatabase=$script:benchmarkDatabase
     restored=(
         $env:PYTASK_DATABASE_URL -eq 'previous-url' -and
         $env:PYTASK_DATABASE_URL_FILE -eq 'previous-file' -and
