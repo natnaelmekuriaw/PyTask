@@ -19,6 +19,7 @@ Percent-encode reserved characters in URL credentials.
 | `PYTASK_HTTP_PORT` | 8000 on localhost |
 | `PYTASK_POSTGRES_PORT` | 15432 on localhost |
 | `PYTASK_REGISTRY` | `pytask_service.example_tasks:registry` |
+| `PYTASK_API_KEYS_SECRET_FILE` | `./.secrets/api-keys.json` for `compose.auth.yaml` |
 | `PYTASK_API_STOP_GRACE` | 45s |
 | `PYTASK_WORKER_STOP_GRACE` | 330s |
 | `PYTASK_SCHEDULER_STOP_GRACE` | 15s |
@@ -36,6 +37,9 @@ Percent-encode reserved characters in URL credentials.
 | `PYTASK_DB_CONNECT_TIMEOUT` | 5 seconds; integer 1–30 |
 | `PYTASK_API_GRACEFUL_SECONDS` | 30; integer 1–300 |
 | `PYTASK_API_CONCURRENCY` | 100; integer 1–10000 |
+| `PYTASK_API_AUTH_MODE` | `required`; explicit `disabled` for local development |
+| `PYTASK_API_KEYS`, `PYTASK_API_KEYS_FILE` | One credential manifest source; required in required mode |
+| `PYTASK_API_DOCS_ENABLED` | `false` in required mode and base Compose; `true` in standalone disabled mode |
 | `PYTASK_API_KEEP_ALIVE_SECONDS` | 5; integer 1–60 |
 | `PYTASK_WORKER_POLL_SECONDS` | 0.5; 0.05–60 |
 | `PYTASK_WORKER_LEASE_SECONDS` | 30; 1–3600 |
@@ -54,3 +58,8 @@ when they are not already mapped by the base Compose definition.
 Only the selected role's runtime options are parsed. Invalid worker settings
 do not prevent an API probe. Numeric errors identify the setting and bound
 without echoing its value. Database URLs are excluded from the settings repr.
+
+Authentication is parsed only by the API and its startup preflight. Its
+[configuration reference](authentication-configuration.md) defines manifest
+limits, strict flags, source conflicts, and documentation access. Key manifests
+are loaded once per API process; recreate all instances after changing records.
