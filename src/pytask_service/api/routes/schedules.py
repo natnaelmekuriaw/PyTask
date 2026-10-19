@@ -2,8 +2,9 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Query, Request, Response, Security
 
+from pytask_service.api.auth_dependencies import access
 from pytask_service.api.dependencies import ResourcesDep, SessionDep
 from pytask_service.api.errors import APIError
 from pytask_service.api.schedule_queries import schedule_page
@@ -25,7 +26,9 @@ router = APIRouter(prefix="/schedules", tags=["Schedules"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("", response_model=Page[ScheduleRead], summary="List recurring schedules")
+@router.get("", response_model=Page[ScheduleRead], summary="List recurring schedules",
+            dependencies=[Security(access, scopes=["schedules:read"])],
+            openapi_extra={"x-required-scopes": ["schedules:read"]})
 def listing(
     session: SessionDep,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
@@ -51,6 +54,8 @@ def listing(
     status_code=201,
     response_model=ScheduleRead,
     summary="Create a recurring schedule",
+    dependencies=[Security(access, scopes=["schedules:write"])],
+    openapi_extra={"x-required-scopes": ["schedules:write"]},
 )
 def create(
     body: ScheduleCreate,
@@ -81,6 +86,8 @@ def create(
     "/{schedule_id}",
     response_model=ScheduleRead,
     summary="Inspect a recurring schedule",
+    dependencies=[Security(access, scopes=["schedules:read"])],
+    openapi_extra={"x-required-scopes": ["schedules:read"]},
 )
 def read(schedule_id: UUID, session: SessionDep) -> ScheduleRead:
     with session.begin():
@@ -107,6 +114,8 @@ def change_state(schedule_id: UUID, session: SessionDep, paused: bool) -> Schedu
     "/{schedule_id}/pause",
     response_model=ScheduleRead,
     summary="Pause future dispatches",
+    dependencies=[Security(access, scopes=["schedules:write"])],
+    openapi_extra={"x-required-scopes": ["schedules:write"]},
 )
 def pause(
     schedule_id: UUID, session: SessionDep, body: ScheduleControl | None = None
@@ -118,6 +127,8 @@ def pause(
     "/{schedule_id}/resume",
     response_model=ScheduleRead,
     summary="Resume dispatch on the original cadence",
+    dependencies=[Security(access, scopes=["schedules:write"])],
+    openapi_extra={"x-required-scopes": ["schedules:write"]},
 )
 def resume(
     schedule_id: UUID, session: SessionDep, body: ScheduleControl | None = None
@@ -129,6 +140,8 @@ def resume(
     "/{schedule_id}/tasks",
     response_model=Page[TaskRead],
     summary="List schedule occurrences",
+    dependencies=[Security(access, scopes=["schedules:read", "tasks:read"])],
+    openapi_extra={"x-required-scopes": ["schedules:read", "tasks:read"]},
 )
 def occurrences(
     schedule_id: UUID,
