@@ -48,6 +48,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                     }
                 )
             )
+    except OSError:
+        print("Key command failed: Cannot access key files", file=sys.stderr)
+        return 1
     except ValueError as error:
         print(f"Key command failed: {error}", file=sys.stderr)
         return 1

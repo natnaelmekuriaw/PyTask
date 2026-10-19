@@ -39,6 +39,8 @@ def write_key_files(issued: IssuedKey, token_file: Path, manifest_file: Path) ->
 
 def read_manifest_file(path: Path) -> tuple[Credential, ...]:
     try:
+        if not path.is_file():
+            raise OSError
         with path.open("rb") as stream:
             content = stream.read(MAX_SECRET_BYTES + 1)
         if len(content) > MAX_SECRET_BYTES:
