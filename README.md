@@ -274,6 +274,23 @@ checks manually before pushing a deployment change. This stage adds no new
 database revision and does not publish an image. Use `compose.auth.yaml` to
 mount the API credential manifest; see [authentication deployment](docs/authentication-deployment.md).
 
+## Benchmarks
+
+Run the full local checks and engine benchmarks with one command:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Benchmarks
+```
+
+The suite measures host Python workers against PostgreSQL with noop, sleep
+and checksum workloads, repeated worker counts, and a separate crash recovery
+check. It uses temporary schemas and writes JSON, CSV and Markdown to a new
+directory under `benchmark-results/`. Generated results are ignored by Git.
+
+See the [benchmark guide](docs/benchmarks.md) for scope, options, timing
+definitions and interpretation. No performance numbers are published until
+measured on a documented environment. This stage adds no database revision.
+
 ## Milestones
 
 1. Register and submit named tasks with JSON arguments. **Implemented.**
@@ -284,5 +301,6 @@ mount the API credential manifest; see [authentication deployment](docs/authenti
 6. Add operational summaries and structured events. **Implemented.**
 7. Package services and define deployment operations. **Implemented.**
 8. Authenticate API clients and enforce operation permissions. **Implemented.**
+9. Measure engine throughput, timing and crash recovery. **Implemented.**
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.

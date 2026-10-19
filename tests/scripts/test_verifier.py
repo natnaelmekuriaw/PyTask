@@ -81,6 +81,8 @@ MOCK_FLOW = r"""
 $ErrorActionPreference = 'Stop'
 $script:calls = [Collections.Generic.List[string]]::new()
 $script:requests = [Collections.Generic.List[string]]::new()
+$script:benchmarkArguments = @()
+$script:benchmarkDatabase = $null
 $originalLocation = (Get-Location).Path
 $env:PYTASK_DATABASE_URL = 'previous-url'
 $env:PYTASK_DATABASE_URL_FILE = 'previous-file'
@@ -139,6 +141,10 @@ function Invoke-VerifyCommand {
             throw 'conflicting database source'
         }
     }
+    if ($Name -eq 'Run task engine benchmarks') {
+        $script:benchmarkArguments = @($Arguments)
+        $script:benchmarkDatabase = $env:PYTASK_DATABASE_URL
+    }
 }
 function Invoke-VerifyRequest {
     param($Client, $Uri, $Token, $Body)
@@ -169,6 +175,15 @@ try {
         TokenFile='.secrets/local-token.txt'
         TaskTimeoutSeconds=0
     }
+    if ($env:VERIFY_BENCHMARKS) {
+        $options.Benchmarks = $true
+        $options.BenchmarkTasks = 7
+        $options.BenchmarkWorkers = @(2, 1)
+        $options.BenchmarkRepeat = 2
+        $options.BenchmarkWarmup = 1
+        $options.BenchmarkTimeoutSeconds = 90
+        $options.BenchmarkOutput = 'reports with spaces'
+    }
     Invoke-LocalVerification @options
 } catch { $failure = $_.Exception.Message }
 [pscustomobject]@{
@@ -178,6 +193,8 @@ try {
     database=if (Get-Variable testDatabase -Scope Script -ErrorAction Ignore) {
         $script:testDatabase
     } else { $null }
+    benchmarkArguments=@($script:benchmarkArguments)
+    benchmarkDatabase=$script:benchmarkDatabase
     restored=(
         $env:PYTASK_DATABASE_URL -eq 'previous-url' -and
         $env:PYTASK_DATABASE_URL_FILE -eq 'previous-file' -and
@@ -237,6 +254,38 @@ def test_complete_flow_preserves_keys_and_uses_compose_ports(
     )
     assert (tmp_path / ".secrets/local-token.txt").read_text() == "existing-token"
     assert (tmp_path / ".env").read_text() == "existing-settings"
+    assert "Run task engine benchmarks" not in calls
+
+
+@pytest.mark.parametrize("shell", SHELLS)
+def test_benchmarks_run_after_tests_and_before_runtime_startup(shell, tmp_path):
+    state = run_flow(shell, workspace(tmp_path), VERIFY_BENCHMARKS="1")
+    assert state["failure"] is None
+    calls = state["calls"]
+    assert (
+        calls.index("Run the full test suite")
+        < calls.index("Run task engine benchmarks")
+        < calls.index("Start and wait for application services")
+    )
+    assert state["benchmarkDatabase"] == state["database"]
+    assert state["benchmarkArguments"] == [
+        "-m",
+        "pytask_service.benchmarks",
+        "--tasks",
+        "7",
+        "--workers",
+        "2",
+        "1",
+        "--repeat",
+        "2",
+        "--warmup",
+        "1",
+        "--case-timeout",
+        "90",
+        "--output",
+        "reports with spaces",
+    ]
+    assert state["restored"] is True
 
 
 @pytest.mark.parametrize("shell", SHELLS)
@@ -272,6 +321,23 @@ def test_partial_key_setup_is_preserved_and_rejected(
     assert "Generate local verification key" not in state["calls"]
     assert state["restored"] is True
     assert not (tmp_path / ".secrets/local-token.txt").exists()
+
+
+@pytest.mark.parametrize("shell", SHELLS)
+def test_failed_benchmarks_stop_runtime_startup_and_restore_environment(
+    shell, tmp_path
+):
+    state = run_flow(
+        shell,
+        workspace(tmp_path),
+        VERIFY_BENCHMARKS="1",
+        VERIFY_FAIL_STAGE="Run task engine benchmarks",
+    )
+    assert state["failure"] == "synthetic failure"
+    assert "Run the full test suite" in state["calls"]
+    assert "Start and wait for application services" not in state["calls"]
+    assert not state["requests"]
+    assert state["restored"] is True
 
 
 @pytest.mark.parametrize("shell", SHELLS)

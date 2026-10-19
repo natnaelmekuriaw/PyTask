@@ -114,6 +114,30 @@ and [acceptance procedure](docs/authentication-verification.md) with endpoint
 changes. Authentication tests under `tests/auth/integration` require PostgreSQL;
 the remaining authentication checks run entirely in process.
 
+## Benchmark changes
+
+Keep timing boundaries and workload cost explicit. Use monotonic clocks for
+coordinator elapsed time and stored database timestamps for task intervals.
+Keep reference result preparation, worker readiness and warmup outside the
+measured batch. Preserve one committed producer transaction per task so
+comparisons retain the same submission cost.
+
+Cover invalid results, failed workers, missing attempts and cleanup failures.
+An incomplete repetition group must not publish a median or speedup. Keep
+connection URLs, payloads and raw exceptions out of report formats. The
+offline benchmark tests use fakes; PostgreSQL and real process checks belong
+under `tests/benchmarks/integration` with the `integration` marker.
+
+The benchmark recovery check deliberately waits for natural lease expiry
+because that behavior is part of the demonstration. Keep its waits bounded.
+Ordinary transition tests can continue using explicit stored lease times.
+
+Run the [one-command acceptance sequence](docs/benchmarks.md) before publishing
+a result. Retain all repetitions, record environment and revision, and keep
+the complete JSON with any summary table. CI checks functional correctness
+and packaged command availability; shared runner speed is not a throughput
+gate. Do not commit generated local runs as portable performance evidence.
+
 ## Pull requests
 
 Explain the behavior you changed, how you checked it, and any migration or
