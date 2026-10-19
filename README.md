@@ -195,22 +195,33 @@ The FastAPI service exposes versioned task submission, monitoring, and
 schedule management under `/api/v1`. It reuses the same queue and execution
 policies as the CLI. Workers and schedulers run as separate processes.
 
-In a terminal with `PYTASK_DATABASE_URL` and `PYTASK_REGISTRY` set, start it on
-localhost:
+Generate a client key using the [authentication guide](docs/authentication-keys.md).
+In a terminal with `PYTASK_DATABASE_URL` and `PYTASK_REGISTRY` set, configure the
+digest manifest before starting the API on localhost:
+
+```powershell
+$env:PYTASK_API_KEYS_FILE = ".secrets/api-keys.json"
+```
 
 ```powershell
 .\.venv\Scripts\python -m uvicorn pytask_service.api.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Open `http://127.0.0.1:8000/docs` for interactive documentation. Submit named
-tasks with `POST /api/v1/tasks`, inspect them with `GET /api/v1/tasks/{id}`,
+Send the client token in an Authorization bearer header. Submit named tasks
+with `POST /api/v1/tasks`, inspect them with `GET /api/v1/tasks/{id}`,
 and read execution history at `/api/v1/tasks/{id}/attempts`. Collection reads
 support bounded pagination and filters. Schedule endpoints create, inspect,
 pause, resume, and list recurring work.
 
 See [PowerShell examples](docs/api-examples.md), the [API contract](docs/api-contract.md),
-and [operation notes](docs/api-operations.md). This stage has no authentication;
-keep the server bound to localhost until access control is added.
+and [operation notes](docs/api-operations.md). The API requires explicit
+[permissions](docs/authentication-permissions.md); health probes remain public.
+Use TLS and a trusted ingress before exposing it beyond localhost.
+
+See the [authentication acceptance guide](docs/authentication-verification.md)
+for the complete Docker, database, test, and authenticated request sequence.
+Interactive documentation is available only in explicit local disabled mode;
+required mode can expose protected OpenAPI JSON when configured.
 
 ## Monitoring
 
@@ -250,7 +261,8 @@ See the [configuration reference](docs/deployment-configuration.md),
 [secret files](docs/deployment-secrets.md), [handler image example](docs/deployment-handlers.md),
 and [verification steps](docs/deployment-verification.md). Build and run these
 checks manually before pushing a deployment change. This stage adds no new
-database revision and does not publish an image or expose an authenticated API.
+database revision and does not publish an image. Use `compose.auth.yaml` to
+mount the API credential manifest; see [authentication deployment](docs/authentication-deployment.md).
 
 ## Milestones
 
@@ -261,5 +273,6 @@ database revision and does not publish an image or expose an authenticated API.
 5. Expose submission and monitoring through an API. **Implemented.**
 6. Add operational summaries and structured events. **Implemented.**
 7. Package services and define deployment operations. **Implemented.**
+8. Authenticate API clients and enforce operation permissions. **Implemented.**
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.

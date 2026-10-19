@@ -31,7 +31,10 @@ identifiers connect related work without including handler payloads.
 | `schedule.created`, `schedule.paused`, `schedule.resumed` | Committed schedule controls |
 | `schedule.dispatched` | Schedule and task IDs, occurrence timestamp, created flag |
 | `scheduler.started`, `scheduler.stopped` | Continuous scheduler lifecycle |
-| `http.request` | Request ID, method, route template, status, elapsed seconds |
+| `http.request` | Request ID, method, route template, status, elapsed seconds, verified credential ID when present |
+| `auth.configured` | Mode and configured key count; disabled mode emits a warning |
+| `auth.rejected` | Safe reason: missing, invalid, or malformed; no claimed key ID |
+| `auth.denied` | Verified credential ID for a denied operation or schema request |
 | `api.database_failed`, `api.integrity_failed`, `api.unexpected_failure` | Exception class without exception text |
 
 An attempt event's `status` is the resulting task state. A failed attempt
@@ -43,6 +46,12 @@ replaced. API task and schedule events inherit the same ID. Unmatched paths
 are labeled unmatched; matched paths use declared templates rather than task
 IDs. Query strings, request bodies, results, SQL parameters, exception messages,
 and tracebacks are excluded from service event fields.
+
+Authentication events exclude token values, token digests, manifests, raw
+headers, and credential file paths. A credential ID comes from the validated
+manifest only after authentication succeeds. Public health requests do not
+authenticate supplied headers and therefore have no credential ID. Early
+authentication rejection can retain the `unmatched` route label.
 
 This filtering applies to service events. Uvicorn, reverse proxies, and
 application task handlers manage their own logs. Review those separately

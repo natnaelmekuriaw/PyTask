@@ -3,7 +3,8 @@
 Use the [upgrade guide](api-upgrade.md) before starting a new checkout. The
 application factory reads configuration when its lifespan starts, not when
 the module is imported. `PYTASK_DATABASE_URL` and `PYTASK_REGISTRY` are required.
-The registry is loaded once per API process.
+The registry is loaded once per API process. Authentication additionally
+requires a [key manifest](authentication-configuration.md) by default.
 
 Start Uvicorn bound to `127.0.0.1`, using the command in the
 [examples](api-examples.md). API processes, workers, and schedulers must use
@@ -50,11 +51,19 @@ root path to match that prefix. Created-resource Location headers include
 the mounted root path. Configure forwarding and trust at the proxy/server
 boundary; the application does not infer permissions from forwarded headers.
 
-Authentication, authorization, and tenant separation are outside this stage.
-Keep this API on localhost for development. It exposes task arguments,
-results, errors, and controls that submit work. Public hosting needs an
-access-control design before enabling untrusted access. Browser CORS is not
-enabled, and does not provide authentication.
+The API validates bearer keys and checks operation permissions. Forwarded
+identity headers do not grant access. Mounted prefixes retain the same
+authentication and documentation checks as a root deployment. Keep localhost
+binding until trusted ingress and TLS are configured.
+
+Key manifests are loaded once at startup. Rotation and revocation require
+recreating every API process. Never mount client token files into the API;
+it needs only their verification manifest. See the [rotation procedure](authentication-keys.md).
+Explicit disabled mode is for local development and emits a startup warning.
+
+Task arguments, results, errors, and submission controls are sensitive. Grants
+cover the shared queue, with no tenant separation. Browser CORS is not enabled
+and is not an access-control mechanism.
 
 See the [contract](api-contract.md) for the supported HTTP surface and limits.
 

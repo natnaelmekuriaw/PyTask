@@ -20,7 +20,9 @@ logger = logging.getLogger(__name__)
 def register_errors(app: FastAPI) -> None:
     @app.exception_handler(APIError)
     async def handle_api(request: Request, error: APIError) -> JSONResponse:
-        return error_response(error.status, error.code, error.message)
+        return error_response(
+            error.status, error.code, error.message, headers=error.headers
+        )
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation(
@@ -108,7 +110,9 @@ def register_errors(app: FastAPI) -> None:
             request_id=request.scope.get("pytask.request_id"),
         )
         request_id = request.scope.get("pytask.request_id")
-        headers = {"X-Request-ID": request_id} if request_id else None
+        headers = {"Cache-Control": "no-store", "Vary": "Authorization"}
+        if request_id:
+            headers["X-Request-ID"] = request_id
         return error_response(
             500, "internal_error", "An internal error occurred", headers=headers
         )

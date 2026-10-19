@@ -1,5 +1,10 @@
 # Upgrade and verify the API
 
+This page describes the earlier API schema change. Current checkouts also
+require the [authentication upgrade](authentication-upgrade.md) before API
+startup. Use its [acceptance sequence](authentication-verification.md) for
+current deployment, credentials, and final checks.
+
 Run commands separately from the repository root in PowerShell. Stop API
 processes, workers, and schedulers before migrating, and wait for active work
 to finish. Use your local development database or a disposable test database.
@@ -7,7 +12,7 @@ to finish. Use your local development database or a disposable test database.
 Install the new dependencies in the project environment:
 
 ```powershell
-.\.venv\Scripts\python -m pip install -e ".[dev]"
+.\.venv\Scripts\python -m pip install -c constraints/runtime.txt -e ".[dev]"
 ```
 
 Set the database URL:

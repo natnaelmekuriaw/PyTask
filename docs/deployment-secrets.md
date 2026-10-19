@@ -12,6 +12,11 @@ container URL and `.secrets/postgres-password.txt` containing its matching
 database password. These files and the directory are ignored by Git and
 excluded from the application image build context.
 
+Generate the API digest manifest separately using the
+[key tool](authentication-keys.md). The commands below combine both secret
+overlays. The API receives its database URL and verification manifest; client
+token files stay on the client machine.
+
 For the unchanged local development credentials, the files contain:
 
 - URL: `postgresql+psycopg://pytask:pytask@postgres:5432/pytask`
@@ -25,17 +30,17 @@ with file sources; see [Docker's secrets guide](https://docs.docker.com/compose/
 Validate the combined definition after creating the files:
 
 ```powershell
-docker compose -f compose.yaml -f compose.secrets.yaml --profile runtime --profile tools config --quiet
+docker compose -f compose.yaml -f compose.secrets.yaml -f compose.auth.yaml --profile runtime --profile tools config --quiet
 ```
 
-Use both files consistently for migration and runtime commands:
+Use all three Compose files consistently for migration and runtime commands:
 
 ```powershell
-docker compose -f compose.yaml -f compose.secrets.yaml --profile tools run --rm migrate
+docker compose -f compose.yaml -f compose.secrets.yaml -f compose.auth.yaml --profile tools run --rm migrate
 ```
 
 ```powershell
-docker compose -f compose.yaml -f compose.secrets.yaml --profile runtime up -d --no-build
+docker compose -f compose.yaml -f compose.secrets.yaml -f compose.auth.yaml --profile runtime up -d --no-build
 ```
 
 The overlay explicitly empties direct URL/password values and mounts the file

@@ -21,9 +21,10 @@ database at startup. Workers and schedulers remain separate processes.
 | GET | `/health/live` | Check process liveness without a database query |
 | GET | `/health/ready` | Check database access and execution table columns |
 
-`/docs` provides interactive OpenAPI documentation. `/openapi.json` exposes
-the machine-readable schema. IDs are UUIDs. Missing tasks or schedules return
-404; existing resources with no history return an empty page.
+In required mode, enabled `/openapi.json` requires `docs:read`; interactive
+documentation is hidden. Explicit local disabled mode can serve `/docs`.
+IDs are UUIDs. Authorized requests for missing tasks or schedules return 404;
+existing resources with no history return an empty page.
 
 ## Input validation
 
@@ -97,10 +98,21 @@ record exception classes for diagnosis.
 
 ## Access scope
 
-This stage serves trusted operators and has no authentication or tenant
-isolation. Keep the server bound to localhost. Authentication and authorization
-are required before exposing it to untrusted clients: task inspection includes
-stored arguments, results, and execution errors.
+The API requires one Authorization bearer header with an operator-issued key.
+Missing or invalid credentials return 401 with a Bearer challenge. Duplicate
+Authorization headers return 400. Valid credentials without the operation's
+permissions return 403 with `insufficient_scope`. See the
+[permission matrix](authentication-permissions.md).
+
+Authentication precedes body buffering and routing; permission dependencies
+precede database session dependencies. Authenticated JSON syntax is parsed
+before permission dependencies run. Protected responses use
+`Cache-Control: no-store` and vary on Authorization. Unexpected failures also
+disable caching. Public health reads expose only minimal status.
+
+Grants cover the shared queue; there is no tenant or per-task ownership.
+Inspection includes stored arguments, results, and errors. Keep localhost
+binding until TLS, trusted ingress, and appropriate network controls are set.
 
 See [API examples](api-examples.md), [upgrade steps](api-upgrade.md), and
 [operation notes](api-operations.md).

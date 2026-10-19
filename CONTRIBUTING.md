@@ -101,6 +101,19 @@ actions; a successful unit suite does not establish a successful image build.
 
 Keep commits focused and describe the change in a short, lower-case subject line.
 
+Authentication changes must preserve required-by-default startup, explicit
+local opt-out, immutable manifest snapshots, and safe credential diagnostics.
+Use generated temporary keys in tests. Cover wrong secrets, duplicate headers,
+scope denial before database access, mounted paths, and failed startup cleanup.
+Keep bearer tokens and digests out of event fields and object representations.
+
+Every versioned API operation must declare its permissions and authentication
+error responses. Schedule task history requires both schedule and task read
+access. Maintain the [permission matrix](docs/authentication-permissions.md)
+and [acceptance procedure](docs/authentication-verification.md) with endpoint
+changes. Authentication tests under `tests/auth/integration` require PostgreSQL;
+the remaining authentication checks run entirely in process.
+
 ## Pull requests
 
 Explain the behavior you changed, how you checked it, and any migration or

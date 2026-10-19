@@ -1,0 +1,12 @@
+services:
+  api:
+    environment:
+      PYTASK_API_AUTH_MODE: required
+      PYTASK_API_KEYS: ""
+      PYTASK_API_KEYS_FILE: /run/secrets/api_keys
+    secrets:
+      - api_keys
+
+secrets:
+  api_keys:
+    file: ${PYTASK_API_KEYS_SECRET_FILE:-./.secrets/api-keys.json}

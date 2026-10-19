@@ -80,4 +80,5 @@ class RequestLoggingMiddleware:
                     status_code=status,
                     duration_seconds=round(max(0.0, monotonic() - started), 6),
                     error_type=error_type,
+                    credential_id=scope.get("pytask.credential_id"),
                 )

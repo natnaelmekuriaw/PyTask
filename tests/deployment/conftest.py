@@ -5,7 +5,11 @@ from tests.worker.conftest import isolated_engine as isolated_engine
 
 @pytest.fixture(autouse=True)
 def clean_deployment_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYTASK_API_AUTH_MODE", "disabled")
     names = (
+        "PYTASK_API_KEYS",
+        "PYTASK_API_KEYS_FILE",
+        "PYTASK_API_DOCS_ENABLED",
         "PYTASK_DATABASE_URL_FILE",
         "PYTASK_ALEMBIC_CONFIG",
         "PYTASK_DB_POOL_SIZE",
