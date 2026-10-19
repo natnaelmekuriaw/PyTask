@@ -60,6 +60,8 @@ jobs:
         run: docker run --rm --read-only --tmpfs /tmp pytask:ci --help
       - name: Check packaged key management
         run: docker run --rm --read-only --tmpfs /tmp --entrypoint python pytask:ci -m pytask_service.auth --help
+      - name: Check packaged benchmark command
+        run: docker run --rm --read-only --tmpfs /tmp --entrypoint python pytask:ci -m pytask_service.benchmarks --help
       - name: Check packaged migrations and runtime identity
         run: |
           docker run --rm -i --read-only --tmpfs /tmp --entrypoint python pytask:ci - <<'PY'
