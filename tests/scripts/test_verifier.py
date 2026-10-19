@@ -326,6 +326,23 @@ def test_partial_key_setup_is_preserved_and_rejected(
 
 
 @pytest.mark.parametrize("shell", SHELLS)
+def test_failed_benchmarks_stop_runtime_startup_and_restore_environment(
+    shell, tmp_path
+):
+    state = run_flow(
+        shell,
+        workspace(tmp_path),
+        VERIFY_BENCHMARKS="1",
+        VERIFY_FAIL_STAGE="Run task engine benchmarks",
+    )
+    assert state["failure"] == "synthetic failure"
+    assert "Run the full test suite" in state["calls"]
+    assert "Start and wait for application services" not in state["calls"]
+    assert not state["requests"]
+    assert state["restored"] is True
+
+
+@pytest.mark.parametrize("shell", SHELLS)
 def test_anonymous_access_must_include_a_bearer_challenge(
     shell: str, tmp_path: Path
 ) -> None:
