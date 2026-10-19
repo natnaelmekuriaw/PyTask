@@ -24,13 +24,13 @@ are also bounded by application settings.
 Inspect current state:
 
 ```powershell
-docker compose --profile runtime ps
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime ps
 ```
 
 Run the same API probe manually:
 
 ```powershell
-docker compose --profile runtime exec api python -m pytask_service.runtime probe api
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime exec api python -m pytask_service.runtime probe api
 ```
 
 A health failure marks a running container unhealthy. The configured restart
