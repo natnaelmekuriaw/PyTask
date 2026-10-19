@@ -10,7 +10,9 @@ MAX_TOKEN_LENGTH = 96
 
 def validate_key_id(key_id: str) -> None:
     if not isinstance(key_id, str) or KEY_ID.fullmatch(key_id) is None:
-        raise ValueError("Key ID must contain 1 to 48 lowercase letters, digits, _ or -")
+        raise ValueError(
+            "Key ID must contain 1 to 48 lowercase letters, digits, _ or -"
+        )
 
 
 def generate_token(key_id: str) -> str:

@@ -16,9 +16,13 @@ from pytask_service.observability.window import (
 router = APIRouter(prefix="/monitoring", tags=["Monitoring"])
 
 
-@router.get("", response_model=MonitoringRead, summary="Read operational statistics",
-            dependencies=[Security(access, scopes=["monitoring:read"])],
-            openapi_extra={"x-required-scopes": ["monitoring:read"]})
+@router.get(
+    "",
+    response_model=MonitoringRead,
+    summary="Read operational statistics",
+    dependencies=[Security(access, scopes=["monitoring:read"])],
+    openapi_extra={"x-required-scopes": ["monitoring:read"]},
+)
 def monitoring(
     session: SessionDep,
     response: Response,

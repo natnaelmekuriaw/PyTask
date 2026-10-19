@@ -40,7 +40,11 @@ def parse_manifest(text: str) -> tuple[Credential, ...]:
             raise ValueError
         keys = []
         for record in records:
-            if not isinstance(record, dict) or set(record) != {"id", "sha256", "scopes"}:
+            if not isinstance(record, dict) or set(record) != {
+                "id",
+                "sha256",
+                "scopes",
+            }:
                 raise ValueError
             scopes = record["scopes"]
             if (
@@ -50,12 +54,17 @@ def parse_manifest(text: str) -> tuple[Credential, ...]:
                 or len(set(scopes)) != len(scopes)
             ):
                 raise ValueError
-            keys.append(Credential(
-                record["id"], record["sha256"],
-                frozenset(Permission(scope) for scope in scopes),
-            ))
+            keys.append(
+                Credential(
+                    record["id"],
+                    record["sha256"],
+                    frozenset(Permission(scope) for scope in scopes),
+                )
+            )
         result = tuple(keys)
         validate_credentials(result)
         return result
     except (ValueError, TypeError, RecursionError, UnicodeError):
-        raise ValueError("PYTASK_API_KEYS must be a valid version 1 key manifest") from None
+        raise ValueError(
+            "PYTASK_API_KEYS must be a valid version 1 key manifest"
+        ) from None

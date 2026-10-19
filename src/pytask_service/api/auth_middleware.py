@@ -38,16 +38,18 @@ class AuthenticationMiddleware:
         state = scope["app"].state
         settings = getattr(state, "auth_settings", None)
         if not isinstance(settings, AuthSettings):
-            await error_response(503, "authentication_unavailable",
-                                 "Authentication is unavailable")(scope, receive, protect)
+            await error_response(
+                503, "authentication_unavailable", "Authentication is unavailable"
+            )(scope, receive, protect)
             return
         if settings.mode is AuthMode.DISABLED:
             principal = Principal(None, ALL_PERMISSIONS)
         else:
             store = getattr(state, "auth_store", None)
             if not isinstance(store, KeyStore):
-                await error_response(503, "authentication_unavailable",
-                                     "Authentication is unavailable")(scope, receive, protect)
+                await error_response(
+                    503, "authentication_unavailable", "Authentication is unavailable"
+                )(scope, receive, protect)
                 return
             try:
                 principal = store.authenticate(parse_bearer(scope.get("headers", [])))
@@ -66,8 +68,9 @@ class AuthenticationMiddleware:
                 )
                 return
             if Permission.DOCS_READ not in principal.permissions:
-                error = permission_error({Permission.DOCS_READ})
-                await error_response(error.status, error.code, error.message,
-                                     headers=error.headers)(scope, receive, protect)
+                denied = permission_error({Permission.DOCS_READ})
+                await error_response(
+                    denied.status, denied.code, denied.message, headers=denied.headers
+                )(scope, receive, protect)
                 return
         await self.app(scope, receive, protect)

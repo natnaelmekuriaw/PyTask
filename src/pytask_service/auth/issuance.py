@@ -12,11 +12,22 @@ class IssuedKey:
     credential: Credential
 
     def manifest(self) -> str:
-        return json.dumps({"version": 1, "keys": [{
-            "id": self.credential.key_id,
-            "sha256": self.credential.sha256,
-            "scopes": sorted(self.credential.permissions),
-        }]}, indent=2) + "\n"
+        return (
+            json.dumps(
+                {
+                    "version": 1,
+                    "keys": [
+                        {
+                            "id": self.credential.key_id,
+                            "sha256": self.credential.sha256,
+                            "scopes": sorted(self.credential.permissions),
+                        }
+                    ],
+                },
+                indent=2,
+            )
+            + "\n"
+        )
 
 
 def issue_key(key_id: str, permissions: frozenset[Permission]) -> IssuedKey:

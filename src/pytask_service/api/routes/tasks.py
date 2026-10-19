@@ -20,9 +20,13 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("", response_model=Page[TaskRead], summary="List tasks",
-            dependencies=[Security(access, scopes=["tasks:read"])],
-            openapi_extra={"x-required-scopes": ["tasks:read"]})
+@router.get(
+    "",
+    response_model=Page[TaskRead],
+    summary="List tasks",
+    dependencies=[Security(access, scopes=["tasks:read"])],
+    openapi_extra={"x-required-scopes": ["tasks:read"]},
+)
 def list_tasks(
     session: SessionDep,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
@@ -47,7 +51,10 @@ def list_tasks(
 
 
 @router.post(
-    "", status_code=201, response_model=TaskRead, summary="Submit a registered task",
+    "",
+    status_code=201,
+    response_model=TaskRead,
+    summary="Submit a registered task",
     dependencies=[Security(access, scopes=["tasks:submit"])],
     openapi_extra={"x-required-scopes": ["tasks:submit"]},
 )
@@ -77,9 +84,13 @@ def create_task(
     return result
 
 
-@router.get("/{task_id}", response_model=TaskRead, summary="Inspect a task",
-            dependencies=[Security(access, scopes=["tasks:read"])],
-            openapi_extra={"x-required-scopes": ["tasks:read"]})
+@router.get(
+    "/{task_id}",
+    response_model=TaskRead,
+    summary="Inspect a task",
+    dependencies=[Security(access, scopes=["tasks:read"])],
+    openapi_extra={"x-required-scopes": ["tasks:read"]},
+)
 def read_task(task_id: UUID, session: SessionDep) -> TaskRead:
     with session.begin():
         task = get_task(session, task_id)

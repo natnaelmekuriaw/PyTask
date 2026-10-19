@@ -7,8 +7,12 @@ from pytask_service.api.schemas.errors import ErrorBody, ErrorDetail, ErrorRespo
 
 class APIError(Exception):
     def __init__(
-        self, status: int, code: str, message: str,
-        *, headers: Mapping[str, str] | None = None,
+        self,
+        status: int,
+        code: str,
+        message: str,
+        *,
+        headers: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(message)
         self.status = status

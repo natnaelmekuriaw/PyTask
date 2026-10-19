@@ -13,9 +13,10 @@ class Credential:
 
     def __post_init__(self) -> None:
         validate_key_id(self.key_id)
-        if not isinstance(self.sha256, str) or re.fullmatch(
-            r"[0-9a-f]{64}", self.sha256, re.ASCII
-        ) is None:
+        if (
+            not isinstance(self.sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", self.sha256, re.ASCII) is None
+        ):
             raise ValueError("Credential sha256 must be a lowercase SHA-256 hex digest")
         if (
             not isinstance(self.permissions, frozenset)

@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
+from pytask_service.auth.credentials import Credential
 from pytask_service.auth.issuance import IssuedKey
 from pytask_service.auth.manifest import parse_manifest
-from pytask_service.auth.credentials import Credential
 from pytask_service.environment import MAX_SECRET_BYTES
 
 
@@ -23,13 +23,17 @@ def write_key_files(issued: IssuedKey, token_file: Path, manifest_file: Path) ->
     try:
         _write_new(token_file, issued.token + "\n")
     except OSError:
-        raise ValueError("Cannot create token file; use a new path in an existing directory") from None
+        raise ValueError(
+            "Cannot create token file; use a new path in an existing directory"
+        ) from None
     try:
         _write_new(manifest_file, issued.manifest())
     except BaseException as error:
         token_file.unlink(missing_ok=True)
         if isinstance(error, OSError):
-            raise ValueError("Cannot create manifest file; existing files are preserved") from None
+            raise ValueError(
+                "Cannot create manifest file; existing files are preserved"
+            ) from None
         raise
 
 

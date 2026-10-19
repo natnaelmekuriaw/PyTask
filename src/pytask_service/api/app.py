@@ -12,9 +12,9 @@ from pytask_service.api.request_logging import RequestLoggingMiddleware
 from pytask_service.api.resources import APIResources
 from pytask_service.api.routes import health, monitoring, schedules, tasks
 from pytask_service.api.schemas.errors import ErrorResponse
-from pytask_service.config import Settings
 from pytask_service.auth.settings import AuthMode, AuthSettings
 from pytask_service.auth.store import KeyStore
+from pytask_service.config import Settings
 from pytask_service.db.engine import build_engine
 from pytask_service.observability.logging import configure_logging
 from pytask_service.registry import TaskRegistry, load_registry
@@ -32,7 +32,11 @@ def create_app(
         configure_logging()
         configured = settings or Settings.from_env()
         authentication = auth if auth is not None else AuthSettings.from_env()
-        store = KeyStore(authentication.keys) if authentication.mode is AuthMode.REQUIRED else None
+        store = (
+            KeyStore(authentication.keys)
+            if authentication.mode is AuthMode.REQUIRED
+            else None
+        )
         handlers = registry
         if handlers is None:
             if configured.registry_path is None:

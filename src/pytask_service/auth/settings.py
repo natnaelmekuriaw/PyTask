@@ -39,7 +39,9 @@ class AuthSettings:
         try:
             mode = AuthMode(os.environ.get("PYTASK_API_AUTH_MODE", "required").strip())
         except ValueError:
-            raise ValueError("PYTASK_API_AUTH_MODE must be required or disabled") from None
+            raise ValueError(
+                "PYTASK_API_AUTH_MODE must be required or disabled"
+            ) from None
         raw = read_secret("PYTASK_API_KEYS")
         if mode is AuthMode.DISABLED and raw:
             raise ValueError("Remove PYTASK_API_KEYS when authentication is disabled")

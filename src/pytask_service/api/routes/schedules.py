@@ -26,9 +26,13 @@ router = APIRouter(prefix="/schedules", tags=["Schedules"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("", response_model=Page[ScheduleRead], summary="List recurring schedules",
-            dependencies=[Security(access, scopes=["schedules:read"])],
-            openapi_extra={"x-required-scopes": ["schedules:read"]})
+@router.get(
+    "",
+    response_model=Page[ScheduleRead],
+    summary="List recurring schedules",
+    dependencies=[Security(access, scopes=["schedules:read"])],
+    openapi_extra={"x-required-scopes": ["schedules:read"]},
+)
 def listing(
     session: SessionDep,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
