@@ -1,7 +1,11 @@
 from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from alembic.util import CommandError
+from sqlalchemy import select
+from sqlalchemy.engine import Engine
 
+from pytask_service.db.models import Schedule, Task, TaskAttempt
 from pytask_service.runtime.paths import RuntimePaths
 
 
@@ -20,3 +24,18 @@ def expected_heads(paths: RuntimePaths) -> frozenset[str]:
     if not heads:
         raise RuntimeFailure("The image contains no migration heads")
     return heads
+
+
+def check_schema(engine: Engine, paths: RuntimePaths) -> None:
+    expected = expected_heads(paths)
+    with engine.connect() as connection, connection.begin():
+        connection.exec_driver_sql("SET TRANSACTION READ ONLY")
+        connection.exec_driver_sql("SET LOCAL lock_timeout = '2s'")
+        connection.exec_driver_sql("SET LOCAL statement_timeout = '5s'")
+        current = frozenset(MigrationContext.configure(connection).get_current_heads())
+        if current != expected:
+            raise RuntimeFailure(
+                "Database schema does not match this image; run the explicit migration command"
+            )
+        for model in (Task, TaskAttempt, Schedule):
+            connection.execute(select(model).limit(0))
