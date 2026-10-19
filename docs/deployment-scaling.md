@@ -3,7 +3,7 @@
 Run more workers with the same immutable image and task registry:
 
 ```powershell
-docker compose --profile runtime up -d --no-build --scale worker=3
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime up -d --no-build --scale worker=3
 ```
 
 There is no fixed worker container name or published worker port. Each process
