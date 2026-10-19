@@ -11,7 +11,9 @@ def test_versioned_operations_declare_permissions_and_denial_responses(
     for path, methods in schema["paths"].items():
         for operation in methods.values():
             if path.startswith("/api/v1/"):
-                assert operation["security"] == [{"APIKey": []}]
+                assert operation["security"] == [
+                    {"APIKey": operation["x-required-scopes"]}
+                ]
                 assert operation["x-required-scopes"]
                 assert {"401", "403"} <= operation["responses"].keys()
             else:

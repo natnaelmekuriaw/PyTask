@@ -37,12 +37,13 @@ def authentication_response(error: AuthenticationError) -> JSONResponse:
 
 def permission_error(required: set[Permission]) -> APIError:
     scopes = " ".join(sorted(required))
+    challenge = f'{REALM}, error="insufficient_scope", scope="{scopes}"'
     return APIError(
         403,
         "insufficient_scope",
         "Credential does not grant the required permissions",
         headers={
-            "WWW-Authenticate": f'{REALM}, error="insufficient_scope", scope="{scopes}"',
+            "WWW-Authenticate": challenge,
             "Cache-Control": "no-store",
         },
     )

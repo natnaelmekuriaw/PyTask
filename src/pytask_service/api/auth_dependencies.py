@@ -17,7 +17,7 @@ class APIKeyAccess(SecurityBase):
     scheme_name = "APIKey"
     model = HTTPBearer(
         bearerFormat="ptk_<id>.<secret>",
-        description="Operator-issued API key. Permissions are listed on each operation.",
+        description="Operator-issued API key with explicit operation permissions.",
     )
 
     async def __call__(

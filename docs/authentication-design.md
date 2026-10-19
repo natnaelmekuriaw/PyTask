@@ -23,3 +23,8 @@ Bearer challenges follow [RFC 6750](https://www.rfc-editor.org/rfc/rfc6750).
 Transport and deployment guidance follows the
 [OWASP REST security guidance](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html).
 Use TLS at the trusted ingress before exposing the API beyond localhost.
+
+OpenAPI declares HTTP bearer authentication and the required permission names
+on each operation. These use the non-OAuth role requirements supported by
+[OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.0.html#security-requirement-object).
+The `x-required-scopes` extension carries the same list for simple clients.
