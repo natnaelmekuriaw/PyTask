@@ -13,3 +13,21 @@ RUN python -m pip wheel --only-binary=:all: --wheel-dir /wheels \
     && python -m venv /opt/venv \
     && /opt/venv/bin/python -m pip install --no-index \
     --find-links=/wheels pytask-service
+
+FROM ${PYTHON_IMAGE} AS runtime
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTASK_ALEMBIC_CONFIG=/app/alembic.ini
+WORKDIR /app
+RUN groupadd --gid 10001 pytask \
+    && useradd --uid 10001 --gid 10001 --no-create-home \
+    --shell /usr/sbin/nologin pytask
+COPY --from=build /opt/venv /opt/venv
+COPY alembic.ini LICENSE ./
+COPY migrations/ migrations/
+USER 10001:10001
+EXPOSE 8000
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/opt/venv/bin/python", "-m", "pytask_service.runtime"]
+CMD ["api"]
