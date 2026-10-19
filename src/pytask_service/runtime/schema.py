@@ -35,7 +35,8 @@ def check_schema(engine: Engine, paths: RuntimePaths) -> None:
         current = frozenset(MigrationContext.configure(connection).get_current_heads())
         if current != expected:
             raise RuntimeFailure(
-                "Database schema does not match this image; run the explicit migration command"
+                "Database schema does not match this image; "
+                "run the explicit migration command"
             )
         for model in (Task, TaskAttempt, Schedule):
             connection.execute(select(model).limit(0))

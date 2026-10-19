@@ -10,7 +10,10 @@ def prepare_service(role: Role, settings: Settings, paths: RuntimePaths) -> None
     if role in {Role.API, Role.WORKER}:
         if settings.registry_path is None:
             raise ValueError("PYTASK_REGISTRY is required for API and worker services")
-        load_registry(settings.registry_path)
+        try:
+            load_registry(settings.registry_path)
+        except TypeError:
+            raise ValueError("PYTASK_REGISTRY must refer to a TaskRegistry") from None
     engine = build_engine(settings)
     try:
         check_schema(engine, paths)
