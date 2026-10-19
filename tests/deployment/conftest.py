@@ -1,13 +1,10 @@
-import os
-from collections.abc import Iterator
-
 import pytest
 
 from tests.worker.conftest import isolated_engine as isolated_engine
 
 
 @pytest.fixture(autouse=True)
-def clean_deployment_environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+def clean_deployment_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     names = (
         "PYTASK_DATABASE_URL_FILE",
         "PYTASK_ALEMBIC_CONFIG",
@@ -28,4 +25,3 @@ def clean_deployment_environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[No
     )
     for name in names:
         monkeypatch.delenv(name, raising=False)
-    yield

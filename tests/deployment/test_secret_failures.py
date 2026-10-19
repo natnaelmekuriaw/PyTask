@@ -6,7 +6,9 @@ from pytask_service.environment import MAX_SECRET_BYTES, read_secret
 
 
 @pytest.mark.parametrize(
-    "content", [b"", b" \r\n", b"\xff", b"x" * (MAX_SECRET_BYTES + 1)]
+    "content",
+    [b"", b" \r\n", b"\xff", b"x" * (MAX_SECRET_BYTES + 1)],
+    ids=["empty", "whitespace", "invalid_utf8", "oversized"],
 )
 def test_invalid_secret_files_have_safe_errors(
     monkeypatch: pytest.MonkeyPatch,
