@@ -17,13 +17,13 @@ unprivileged user and process entry point.
 Build the derived image through the overlay:
 
 ```powershell
-docker compose -f compose.yaml -f examples/container/compose.handlers.yaml --profile runtime build api
+docker compose -f compose.yaml -f examples/container/compose.handlers.yaml -f compose.auth.yaml --profile runtime build api
 ```
 
 Start all application roles with the same overlay:
 
 ```powershell
-docker compose -f compose.yaml -f examples/container/compose.handlers.yaml --profile runtime up -d --no-build
+docker compose -f compose.yaml -f examples/container/compose.handlers.yaml -f compose.auth.yaml --profile runtime up -d --no-build
 ```
 
 The overlay sets `handlers:registry` on the API, worker, and operator service.
