@@ -30,6 +30,8 @@ services:
     <<: *application
     profiles: [runtime]
     command: [api]
+    pids_limit: 128
+    mem_limit: ${PYTASK_API_MEMORY:-512m}
     restart: "on-failure:3"
     environment:
       <<: *application-environment
@@ -52,6 +54,8 @@ services:
     <<: *application
     profiles: [runtime]
     command: [worker]
+    pids_limit: 128
+    mem_limit: ${PYTASK_WORKER_MEMORY:-512m}
     restart: "on-failure:3"
     environment:
       <<: *application-environment
@@ -71,6 +75,8 @@ services:
     <<: *application
     profiles: [runtime]
     command: [scheduler]
+    pids_limit: 64
+    mem_limit: ${PYTASK_SCHEDULER_MEMORY:-256m}
     restart: "on-failure:3"
     environment:
       <<: *application-environment
@@ -89,6 +95,8 @@ services:
     <<: *application
     profiles: [tools]
     command: [migrate]
+    pids_limit: 64
+    mem_limit: 256m
     restart: "no"
     environment:
       <<: *application-environment
@@ -99,6 +107,8 @@ services:
     <<: *application
     profiles: [tools]
     command: [cli, --help]
+    pids_limit: 64
+    mem_limit: 256m
     restart: "no"
     environment:
       <<: *application-environment
