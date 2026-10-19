@@ -20,7 +20,9 @@ logger = logging.getLogger(__name__)
 def register_errors(app: FastAPI) -> None:
     @app.exception_handler(APIError)
     async def handle_api(request: Request, error: APIError) -> JSONResponse:
-        return error_response(error.status, error.code, error.message)
+        return error_response(
+            error.status, error.code, error.message, headers=error.headers
+        )
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation(
