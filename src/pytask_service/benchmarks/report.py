@@ -33,7 +33,7 @@ class BenchmarkReport:
             "options": asdict(self.options), "environment": asdict(self.environment),
             "planned_cases": len(plan_cases(self.options)),
             "cases": [asdict(result) | {"valid": result.valid} for result in self.results],
-            "summary": [asdict(row) for row in summarize(self.results)],
+            "summary": [asdict(row) for row in summarize(self.results, self.options.repeat)],
             "recovery": asdict(self.recovery) if self.recovery else None,
             "error_code": self.error_code,
             "measurement": {

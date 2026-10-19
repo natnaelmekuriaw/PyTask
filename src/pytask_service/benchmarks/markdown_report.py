@@ -24,7 +24,7 @@ def render_markdown(report: BenchmarkReport) -> str:
         "| Workload | Workers | Valid / observed runs | Median tasks/s | Min | Max | Speedup |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
-    for row in summarize(report.results):
+    for row in summarize(report.results, report.options.repeat):
         lines.append(
             f"| {row.workload.value} | {row.workers} | {row.valid_repetitions}/{row.repetitions} "
             f"| {_number(row.median_throughput)} | {_number(row.minimum_throughput)} "
