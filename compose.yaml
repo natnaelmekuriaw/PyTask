@@ -48,6 +48,25 @@ services:
       start_period: 15s
       retries: 3
 
+  worker:
+    <<: *application
+    profiles: [runtime]
+    command: [worker]
+    restart: "on-failure:3"
+    environment:
+      <<: *application-environment
+      PYTASK_REGISTRY: ${PYTASK_REGISTRY:-pytask_service.example_tasks:registry}
+      PYTASK_WORKER_POLL_SECONDS: ${PYTASK_WORKER_POLL_SECONDS:-0.5}
+      PYTASK_WORKER_LEASE_SECONDS: ${PYTASK_WORKER_LEASE_SECONDS:-30}
+      PYTASK_WORKER_HEARTBEAT_SECONDS: ${PYTASK_WORKER_HEARTBEAT_SECONDS:-10}
+    stop_grace_period: ${PYTASK_WORKER_STOP_GRACE:-330s}
+    healthcheck:
+      test: [CMD, python, -m, pytask_service.runtime, probe, database]
+      interval: 30s
+      timeout: 12s
+      start_period: 15s
+      retries: 3
+
   postgres:
     restart: "on-failure:3"
     image: postgres:17-alpine
