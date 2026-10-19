@@ -4,6 +4,7 @@ from collections.abc import Sequence
 
 from pytask_service.benchmarks.arguments import parser, read_options
 from pytask_service.benchmarks.artifacts import write_reports
+from pytask_service.benchmarks.cases import plan_cases
 from pytask_service.benchmarks.suite import run_suite
 from pytask_service.config import Settings
 
@@ -17,6 +18,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ValueError as error:
         print(f"Benchmark configuration failed: {error}", file=sys.stderr)
         return 2
+    cases = len(plan_cases(options))
+    recovery = "enabled" if options.recovery else "disabled"
+    print(
+        f"Benchmark plan: {cases} cases, {cases * options.tasks} measured tasks, "
+        f"{cases * options.warmup} warmup tasks; recovery {recovery}.",
+        file=sys.stderr,
+        flush=True,
+    )
     report = run_suite(
         settings,
         options,
