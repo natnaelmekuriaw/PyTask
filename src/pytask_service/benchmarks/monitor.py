@@ -9,8 +9,11 @@ from pytask_service.benchmarks.workers import WorkerGroup
 
 
 def wait_for_batch(
-    engine: Engine, identities: tuple[UUID, ...], workers: WorkerGroup,
-    deadline: Deadline, poll_interval: float,
+    engine: Engine,
+    identities: tuple[UUID, ...],
+    workers: WorkerGroup,
+    deadline: Deadline,
+    poll_interval: float,
 ) -> None:
     while True:
         deadline.check()
@@ -18,4 +21,3 @@ def wait_for_batch(
         if batch_complete(engine, identities):
             return
         sleep(min(poll_interval, deadline.remaining))
-

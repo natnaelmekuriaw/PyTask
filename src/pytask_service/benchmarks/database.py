@@ -39,18 +39,23 @@ class BenchmarkDatabase:
                 with self.admin.begin() as connection:
                     connection.execute(DropSchema(self.schema, cascade=True))
             except Exception:
-                raise BenchmarkFailure("schema_cleanup_failed", retained_schema=self.schema) from None
+                raise BenchmarkFailure(
+                    "schema_cleanup_failed", retained_schema=self.schema
+                ) from None
             self._created = False
 
     def __exit__(
-        self, kind: type[BaseException] | None, error: BaseException | None,
+        self,
+        kind: type[BaseException] | None,
+        error: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        retain = isinstance(error, BenchmarkFailure) and error.retained_schema == self.schema
+        retain = (
+            isinstance(error, BenchmarkFailure) and error.retained_schema == self.schema
+        )
         self.close(retain=retain)
 
     def connected_engine(self) -> Engine:
         if self.engine is None or not self._created:
             raise BenchmarkFailure("schema_not_initialized")
         return self.engine
-

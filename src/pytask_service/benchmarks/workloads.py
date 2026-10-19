@@ -29,4 +29,3 @@ def checksum(index: int, iterations: int) -> str:
 registry.register("benchmark.noop", noop)
 registry.register("benchmark.sleep", wait)
 registry.register("benchmark.checksum", checksum)
-

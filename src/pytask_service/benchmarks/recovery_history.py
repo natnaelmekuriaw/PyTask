@@ -9,7 +9,8 @@ def verify_recovery(observed: Observation) -> tuple[str, ...]:
     task = observed.tasks[0]
     attempts = sorted(observed.attempts, key=lambda item: item.number)
     if (
-        task.status != "succeeded" or task.attempt_count != 2
+        task.status != "succeeded"
+        or task.attempt_count != 2
         or [attempt.number for attempt in attempts] != [1, 2]
         or [attempt.status for attempt in attempts] != ["abandoned", "succeeded"]
         or any(attempt.task_id != task.id for attempt in attempts)
@@ -21,4 +22,3 @@ def verify_recovery(observed: Observation) -> tuple[str, ...]:
         interval(attempt.queued_at, attempt.started_at)
         interval(attempt.started_at, attempt.finished_at)
     return tuple(attempt.status for attempt in attempts)
-

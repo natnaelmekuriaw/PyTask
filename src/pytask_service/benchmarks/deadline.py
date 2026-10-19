@@ -5,7 +5,9 @@ from pytask_service.benchmarks.errors import BenchmarkFailure
 
 
 class Deadline:
-    def __init__(self, seconds: float, *, clock: Callable[[], float] = monotonic) -> None:
+    def __init__(
+        self, seconds: float, *, clock: Callable[[], float] = monotonic
+    ) -> None:
         self.clock = clock
         self.ends_at = clock() + seconds
 
@@ -16,4 +18,3 @@ class Deadline:
     def check(self) -> None:
         if self.clock() >= self.ends_at:
             raise BenchmarkFailure("deadline_exceeded")
-

@@ -29,4 +29,3 @@ def write_reports(report: BenchmarkReport, directory: Path) -> Path:
     ):
         _write_new(output / filename, content)
     return output
-

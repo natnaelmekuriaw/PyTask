@@ -13,8 +13,14 @@ from pytask_service.worker.termination import stop_process
 
 class WorkerGroup:
     def __init__(
-        self, settings: Settings, schema: str, count: int, *, startup_timeout: float,
-        shutdown_timeout: float, context: BaseContext | None = None,
+        self,
+        settings: Settings,
+        schema: str,
+        count: int,
+        *,
+        startup_timeout: float,
+        shutdown_timeout: float,
+        context: BaseContext | None = None,
     ) -> None:
         validate_schema_name(schema)
         if type(count) is not int or not 1 <= count <= 32:
@@ -33,7 +39,13 @@ class WorkerGroup:
                 ready = self.context.Event()
                 process = self.context.Process(  # type: ignore[attr-defined]
                     target=worker_main,
-                    args=(self.settings, self.schema, self.stopped, ready, f"benchmark-{index}"),
+                    args=(
+                        self.settings,
+                        self.schema,
+                        self.stopped,
+                        ready,
+                        f"benchmark-{index}",
+                    ),
                 )
                 try:
                     process.start()
@@ -79,10 +91,11 @@ class WorkerGroup:
         return forced
 
     def __exit__(
-        self, kind: type[BaseException] | None, error: BaseException | None,
+        self,
+        kind: type[BaseException] | None,
+        error: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
         forced = self.stop()
         if forced and error is None:
             raise BenchmarkFailure("forced_worker_shutdown")
-

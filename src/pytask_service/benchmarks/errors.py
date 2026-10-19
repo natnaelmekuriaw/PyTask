@@ -3,4 +3,3 @@ class BenchmarkFailure(RuntimeError):
         super().__init__(code)
         self.code = code
         self.retained_schema = retained_schema
-

@@ -23,4 +23,3 @@ class RecoveryResult:
     attempt_statuses: tuple[str, ...] = ()
     error_code: str | None = None
     retained_schema: str | None = None
-

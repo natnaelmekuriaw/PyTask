@@ -28,4 +28,3 @@ class AttemptRecord:
 class Observation:
     tasks: tuple[TaskRecord, ...]
     attempts: tuple[AttemptRecord, ...]
-

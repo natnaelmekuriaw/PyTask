@@ -29,7 +29,11 @@ def distribution(values: Iterable[float]) -> Distribution:
         return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
 
     return Distribution(
-        len(ordered), ordered[0], fmean(ordered), percentile(0.5),
-        percentile(0.95), percentile(0.99), ordered[-1],
+        len(ordered),
+        ordered[0],
+        fmean(ordered),
+        percentile(0.5),
+        percentile(0.95),
+        percentile(0.99),
+        ordered[-1],
     )
-

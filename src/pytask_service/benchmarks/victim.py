@@ -27,7 +27,10 @@ def victim_main(settings: Settings, schema: str, claimed: Event) -> None:
     try:
         check_scope(engine, schema)
         Worker(
-            engine, REGISTRY_PATH, worker_id="benchmark-victim", executor=crash,
+            engine,
+            REGISTRY_PATH,
+            worker_id="benchmark-victim",
+            executor=crash,
             policy=WorkerPolicy(lease_seconds=3, heartbeat_seconds=0.5),
         ).run_once()
     except Exception:
@@ -39,8 +42,9 @@ def victim_main(settings: Settings, schema: str, claimed: Event) -> None:
 def crash_worker(settings: Settings, schema: str, timeout: float) -> None:
     context = multiprocessing.get_context("spawn")
     claimed = context.Event()
-    process = context.Process(  # type: ignore[attr-defined]
-        target=victim_main, args=(settings, schema, claimed),
+    process = context.Process(
+        target=victim_main,
+        args=(settings, schema, claimed),
     )
     started = False
     deadline = Deadline(timeout)
@@ -60,6 +64,7 @@ def crash_worker(settings: Settings, schema: str, timeout: float) -> None:
             try:
                 stop_process(process)
             except RuntimeError:
-                raise BenchmarkFailure("workers_still_running", retained_schema=schema) from None
+                raise BenchmarkFailure(
+                    "workers_still_running", retained_schema=schema
+                ) from None
         process.close()
-

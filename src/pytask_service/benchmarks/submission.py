@@ -12,17 +12,25 @@ from pytask_service.tasks import submit_task
 
 
 def submit_batch(
-    engine: Engine, items: tuple[WorkItem, ...], policy: TaskPolicy,
-    *, check_deadline: Callable[[], None],
+    engine: Engine,
+    items: tuple[WorkItem, ...],
+    policy: TaskPolicy,
+    *,
+    check_deadline: Callable[[], None],
 ) -> tuple[UUID, ...]:
     identities = []
     for item in items:
         check_deadline()
         with Session(engine) as session, session.begin():
-            identities.append(submit_task(
-                session, registry, item.name, item.arguments, policy=policy,
-            ))
+            identities.append(
+                submit_task(
+                    session,
+                    registry,
+                    item.name,
+                    item.arguments,
+                    policy=policy,
+                )
+            )
     if len(set(identities)) != len(identities):
         raise BenchmarkFailure("duplicate_submission_identity")
     return tuple(identities)
-

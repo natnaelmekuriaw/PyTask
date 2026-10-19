@@ -11,11 +11,10 @@ class CaseSpec:
 
 
 def plan_cases(options: BenchmarkOptions) -> tuple[CaseSpec, ...]:
-    cases = []
+    cases: list[CaseSpec] = []
     for repetition in range(options.repeat):
         offset = repetition % len(options.workers)
         counts = options.workers[offset:] + options.workers[:offset]
         for workload in options.workloads:
             cases.extend(CaseSpec(workload, count, repetition + 1) for count in counts)
     return tuple(cases)
-

@@ -15,11 +15,13 @@ def work_item(workload: Workload, index: int, options: BenchmarkOptions) -> Work
     if workload is Workload.NOOP:
         return WorkItem("benchmark.noop", {"index": index}, index)
     if workload is Workload.SLEEP:
-        return WorkItem("benchmark.sleep", {"index": index, "milliseconds": options.sleep_ms}, index)
+        return WorkItem(
+            "benchmark.sleep", {"index": index, "milliseconds": options.sleep_ms}, index
+        )
     if workload is Workload.CHECKSUM:
         return WorkItem(
-            "benchmark.checksum", {"index": index, "iterations": options.iterations},
+            "benchmark.checksum",
+            {"index": index, "iterations": options.iterations},
             checksum(index, options.iterations),
         )
     raise ValueError("Unsupported benchmark workload")
-

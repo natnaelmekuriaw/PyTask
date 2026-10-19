@@ -10,7 +10,9 @@ from pytask_service.worker.service import Worker
 REGISTRY_PATH = "pytask_service.benchmarks.workloads:registry"
 
 
-def worker_main(settings: Settings, schema: str, stopped: Event, ready: Event, identity: str) -> None:
+def worker_main(
+    settings: Settings, schema: str, stopped: Event, ready: Event, identity: str
+) -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     logging.getLogger("pytask_service").setLevel(logging.WARNING)
     engine = None
@@ -28,4 +30,3 @@ def worker_main(settings: Settings, schema: str, stopped: Event, ready: Event, i
     finally:
         if engine is not None:
             engine.dispose()
-

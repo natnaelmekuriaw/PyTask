@@ -18,14 +18,16 @@ class Environment:
 
 
 def host_environment() -> Environment:
-    packages = {}
+    packages: dict[str, str | None] = {}
     for package in ("pytask-service", "SQLAlchemy", "psycopg"):
         try:
             packages[package] = version(package)
         except PackageNotFoundError:
             packages[package] = None
     return Environment(
-        platform.python_version(), platform.python_implementation(),
-        platform.platform(), os.cpu_count(), packages,
+        platform.python_version(),
+        platform.python_implementation(),
+        platform.platform(),
+        os.cpu_count(),
+        packages,
     )
-

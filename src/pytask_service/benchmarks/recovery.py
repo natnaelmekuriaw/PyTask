@@ -17,21 +17,31 @@ from pytask_service.config import Settings
 from pytask_service.policy import TaskPolicy
 
 
-def run_recovery(admin: Engine, settings: Settings, options: BenchmarkOptions) -> RecoveryResult:
+def run_recovery(
+    admin: Engine, settings: Settings, options: BenchmarkOptions
+) -> RecoveryResult:
     with BenchmarkDatabase(admin, settings) as database:
         engine = database.connected_engine()
         deadline = Deadline(options.case_timeout)
         items = (work_item(Workload.NOOP, 0, options),)
         identities = submit_batch(
-            engine, items, TaskPolicy(
-                max_attempts=2, timeout_seconds=options.task_timeout,
-                retry_base_seconds=0.01, retry_max_seconds=0.01,
-            ), check_deadline=deadline.check,
+            engine,
+            items,
+            TaskPolicy(
+                max_attempts=2,
+                timeout_seconds=options.task_timeout,
+                retry_base_seconds=0.01,
+                retry_max_seconds=0.01,
+            ),
+            check_deadline=deadline.check,
         )
         crash_worker(settings, database.schema, deadline.remaining)
         started = perf_counter()
         with WorkerGroup(
-            settings, database.schema, 1, startup_timeout=deadline.remaining,
+            settings,
+            database.schema,
+            1,
+            startup_timeout=deadline.remaining,
             shutdown_timeout=options.task_timeout + 5,
         ) as workers:
             wait_for_batch(engine, identities, workers, deadline, options.poll_interval)
@@ -40,4 +50,3 @@ def run_recovery(admin: Engine, settings: Settings, options: BenchmarkOptions) -
             validate_results(items, identities, observed)
             outcomes = verify_recovery(observed)
         return RecoveryResult(True, elapsed, outcomes)
-
