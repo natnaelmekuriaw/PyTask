@@ -18,16 +18,21 @@ For a new local environment, copy the template once. Keep an existing
 Copy-Item .env.example .env
 ```
 
+Generate `.secrets/api-keys.json` and its separate client token using the
+[authentication acceptance guide](authentication-verification.md). Choose
+permissions for the client; the API receives only the digest manifest.
+The commands below use `compose.auth.yaml` to mount it.
+
 Validate the resolved service definition without printing credentials:
 
 ```powershell
-docker compose --profile runtime --profile tools config --quiet
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime --profile tools config --quiet
 ```
 
 Build the shared image through the API service:
 
 ```powershell
-docker compose --profile runtime build api
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime build api
 ```
 
 ## Prepare the database
@@ -41,7 +46,7 @@ docker compose up -d postgres
 Apply the image's migrations explicitly:
 
 ```powershell
-docker compose --profile tools run --rm migrate
+docker compose -f compose.yaml -f compose.auth.yaml --profile tools run --rm migrate
 ```
 
 A migration failure must be resolved before starting the application. The
@@ -53,23 +58,24 @@ There is no new database revision in the deployment setup stage.
 Start the application services using the built image:
 
 ```powershell
-docker compose --profile runtime up -d --no-build
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime up -d --no-build
 ```
 
 Inspect service state:
 
 ```powershell
-docker compose --profile runtime ps
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime ps
 ```
 
 Read aggregate statistics:
 
 ```powershell
-docker compose --profile tools run --rm ops cli stats
+docker compose -f compose.yaml -f compose.auth.yaml --profile tools run --rm ops cli stats
 ```
 
-Open `http://127.0.0.1:8000/docs` for the API. Use the
-[acceptance checks](deployment-verification.md) to submit and execute a task.
+Use the [authenticated HTTP examples](authentication-examples.md) to submit
+and execute a task. Health reads remain public; other requests need a bearer
+key with the operation's permissions. Required mode hides interactive docs.
 
 ## Operating guides
 
@@ -85,6 +91,6 @@ Open `http://127.0.0.1:8000/docs` for the API. Use the
 - [Backup and restore](deployment-backups.md)
 - [Upgrades and rollback](deployment-upgrades.md)
 
-The API has no authentication or tenant isolation. Keep the supplied localhost
-publication until an access-control and TLS boundary is designed for hosting.
-The image and Compose setup do not provide those application controls.
+API permissions apply to the shared queue; tenant isolation is not provided.
+Keep the supplied localhost publication until TLS, trusted ingress, request
+throttling, and network controls are configured for hosting.
