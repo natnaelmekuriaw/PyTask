@@ -23,3 +23,13 @@ def test_empty_migration_histories_are_not_treated_as_current(
     monkeypatch.setattr(schema.ScriptDirectory, "from_config", lambda config: Scripts())
     with pytest.raises(schema.RuntimeFailure, match="no migration heads"):
         schema.expected_heads(RuntimePaths(Path("unused")))
+
+
+def test_malformed_configurations_do_not_expose_file_contents(tmp_path: Path) -> None:
+    path = tmp_path / "private-config.ini"
+    path.write_text("private-credential-value", encoding="utf-8")
+    with pytest.raises(schema.RuntimeFailure) as failure:
+        schema.expected_heads(RuntimePaths(path))
+    assert str(failure.value) == (
+        "Migration scripts are unavailable; check the image and configuration"
+    )

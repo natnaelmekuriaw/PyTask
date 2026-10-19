@@ -1,3 +1,5 @@
+from configparser import Error as ConfigError
+
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
@@ -17,7 +19,7 @@ def expected_heads(paths: RuntimePaths) -> frozenset[str]:
     try:
         config = Config(str(paths.alembic_config))
         heads = frozenset(ScriptDirectory.from_config(config).get_heads())
-    except (OSError, CommandError):
+    except (OSError, UnicodeError, ConfigError, CommandError):
         raise RuntimeFailure(
             "Migration scripts are unavailable; check the image and configuration"
         ) from None
