@@ -67,6 +67,24 @@ services:
       start_period: 15s
       retries: 3
 
+  scheduler:
+    <<: *application
+    profiles: [runtime]
+    command: [scheduler]
+    restart: "on-failure:3"
+    environment:
+      <<: *application-environment
+      PYTASK_DB_POOL_SIZE: "1"
+      PYTASK_SCHEDULER_BATCH_SIZE: ${PYTASK_SCHEDULER_BATCH_SIZE:-100}
+      PYTASK_SCHEDULER_POLL_SECONDS: ${PYTASK_SCHEDULER_POLL_SECONDS:-1}
+    stop_grace_period: ${PYTASK_SCHEDULER_STOP_GRACE:-15s}
+    healthcheck:
+      test: [CMD, python, -m, pytask_service.runtime, probe, database]
+      interval: 30s
+      timeout: 12s
+      start_period: 15s
+      retries: 3
+
   postgres:
     restart: "on-failure:3"
     image: postgres:17-alpine
