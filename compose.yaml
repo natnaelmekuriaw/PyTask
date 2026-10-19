@@ -26,6 +26,28 @@ x-application: &application
       max-file: "3"
 
 services:
+  api:
+    <<: *application
+    profiles: [runtime]
+    command: [api]
+    restart: "on-failure:3"
+    environment:
+      <<: *application-environment
+      PYTASK_REGISTRY: ${PYTASK_REGISTRY:-pytask_service.example_tasks:registry}
+      PYTASK_DB_POOL_SIZE: ${PYTASK_API_DB_POOL_SIZE:-5}
+      PYTASK_DB_MAX_OVERFLOW: ${PYTASK_API_DB_MAX_OVERFLOW:-5}
+      PYTASK_API_GRACEFUL_SECONDS: ${PYTASK_API_GRACEFUL_SECONDS:-30}
+      PYTASK_API_CONCURRENCY: ${PYTASK_API_CONCURRENCY:-100}
+    ports:
+      - "127.0.0.1:${PYTASK_HTTP_PORT:-8000}:8000"
+    stop_grace_period: ${PYTASK_API_STOP_GRACE:-45s}
+    healthcheck:
+      test: [CMD, python, -m, pytask_service.runtime, probe, api]
+      interval: 30s
+      timeout: 8s
+      start_period: 15s
+      retries: 3
+
   postgres:
     image: postgres:17-alpine
     environment:
