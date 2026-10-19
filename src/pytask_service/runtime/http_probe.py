@@ -1,7 +1,7 @@
 import json
 from email.message import Message
 from typing import IO
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from pytask_service.runtime.schema import RuntimeFailure
@@ -31,6 +31,8 @@ def probe_api(timeout: float = 3) -> None:
             if response.status != 200:
                 raise RuntimeFailure("API readiness returned an unsuccessful status")
             payload = response.read(MAX_PROBE_BYTES + 1)
+    except HTTPError as error:
+        raise RuntimeFailure(f"API readiness returned HTTP {error.code}") from None
     except (URLError, OSError):
         raise RuntimeFailure("API readiness check failed") from None
     if len(payload) > MAX_PROBE_BYTES:

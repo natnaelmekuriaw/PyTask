@@ -34,8 +34,11 @@ def main() -> int:
         elif role == Role.MIGRATE:
             Settings.from_env()
         replace_process(command)
-    except (ValueError, RuntimeFailure) as error:
+    except ValueError as error:
         print(f"Runtime configuration failed: {error}", file=sys.stderr)
+        return 1
+    except RuntimeFailure as error:
+        print(f"Runtime check failed: {error}", file=sys.stderr)
         return 1
     except SQLAlchemyError:
         print(
