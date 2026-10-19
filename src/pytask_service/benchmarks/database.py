@@ -1,5 +1,6 @@
 from types import TracebackType
 
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateSchema, DropSchema
 
@@ -21,8 +22,10 @@ class BenchmarkDatabase:
     def __enter__(self) -> "BenchmarkDatabase":
         try:
             with self.admin.begin() as connection:
+                connection.execute(text("SET LOCAL lock_timeout = '2s'"))
+                connection.execute(text("SET LOCAL statement_timeout = '5s'"))
                 connection.execute(CreateSchema(self.schema))
-            self._created = True
+                self._created = True
             self.engine = scoped_engine(self.settings, self.schema)
             check_scope(self.engine, self.schema)
             Task.metadata.create_all(self.engine)
@@ -37,7 +40,11 @@ class BenchmarkDatabase:
         if self._created and not retain:
             try:
                 with self.admin.begin() as connection:
-                    connection.execute(DropSchema(self.schema, cascade=True))
+                    connection.execute(text("SET LOCAL lock_timeout = '2s'"))
+                    connection.execute(text("SET LOCAL statement_timeout = '5s'"))
+                    connection.execute(
+                        DropSchema(self.schema, cascade=True, if_exists=True)
+                    )
             except Exception:
                 raise BenchmarkFailure(
                     "schema_cleanup_failed", retained_schema=self.schema
