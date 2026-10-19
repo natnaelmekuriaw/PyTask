@@ -77,4 +77,3 @@ and comparison limits see [report formats](benchmark-results.md).
 References: [Python spawn](https://docs.python.org/3.12/library/multiprocessing.html),
 [PostgreSQL schemas](https://www.postgresql.org/docs/17/ddl-schemas.html), and
 [SQLAlchemy PostgreSQL](https://docs.sqlalchemy.org/en/20/dialects/postgresql.html).
-
