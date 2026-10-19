@@ -85,6 +85,8 @@ $originalLocation = (Get-Location).Path
 $env:PYTASK_DATABASE_URL = 'previous-url'
 $env:PYTASK_DATABASE_URL_FILE = 'previous-file'
 $env:PYTASK_API_KEYS_SECRET_FILE = 'previous-manifest'
+$env:BUILDKIT_PROGRESS = 'tty'
+$env:COMPOSE_MENU = 'true'
 
 function docker { throw 'Real Docker must never run in this test' }
 function Push-Location {
@@ -94,6 +96,21 @@ function Push-Location {
 function Invoke-VerifyCommand {
     param($Name, $FilePath, $Arguments, [switch]$CaptureOutput)
     $script:calls.Add($Name)
+    if ($FilePath -eq 'docker' -and $Arguments[0] -eq 'compose') {
+        $progressIndex = [Array]::IndexOf($Arguments, '--progress')
+        $ansiIndex = [Array]::IndexOf($Arguments, '--ansi')
+        if ($progressIndex -lt 0 -or $Arguments[$progressIndex + 1] -ne 'plain' -or
+            $ansiIndex -lt 0 -or $Arguments[$ansiIndex + 1] -ne 'never') {
+            throw 'Compose output still requires an interactive console'
+        }
+        if ($Arguments -contains 'run' -and $Arguments -notcontains '-T') {
+            throw 'One-off containers still allocate a terminal'
+        }
+    }
+    if ($Name -eq 'Build application image' -and
+        ($env:BUILDKIT_PROGRESS -ne 'plain' -or $env:COMPOSE_MENU -ne 'false')) {
+        throw 'Build output is not configured for automation'
+    }
     if ($Name -eq $env:VERIFY_FAIL_STAGE) { throw 'synthetic failure' }
     if ($Name -eq 'Check Docker Desktop') { return 'linux' }
     if ($Name -eq 'Read Compose configuration') {
@@ -165,6 +182,8 @@ try {
         $env:PYTASK_DATABASE_URL -eq 'previous-url' -and
         $env:PYTASK_DATABASE_URL_FILE -eq 'previous-file' -and
         $env:PYTASK_API_KEYS_SECRET_FILE -eq 'previous-manifest' -and
+        $env:BUILDKIT_PROGRESS -eq 'tty' -and
+        $env:COMPOSE_MENU -eq 'true' -and
         (Get-Location).Path -eq $originalLocation
     )
 } | ConvertTo-Json -Depth 5 -Compress

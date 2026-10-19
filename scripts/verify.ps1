@@ -26,7 +26,7 @@ function Invoke-VerifyCommand {
         $output = @(& $FilePath @Arguments)
     }
     else {
-        & $FilePath @Arguments | Out-Host
+        & $FilePath @Arguments
     }
     if ($global:LASTEXITCODE -ne 0) {
         throw "$Name failed (exit $global:LASTEXITCODE)."
@@ -105,7 +105,8 @@ function Invoke-LocalVerification {
     $PSNativeCommandUseErrorActionPreference = $false
     $savedEnvironment = @{}
     foreach ($name in @(
-        'PYTASK_DATABASE_URL', 'PYTASK_DATABASE_URL_FILE', 'PYTASK_API_KEYS_SECRET_FILE'
+        'PYTASK_DATABASE_URL', 'PYTASK_DATABASE_URL_FILE', 'PYTASK_API_KEYS_SECRET_FILE',
+        'BUILDKIT_PROGRESS', 'COMPOSE_MENU'
     )) {
         $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     }
@@ -113,6 +114,9 @@ function Invoke-LocalVerification {
     $started = [Diagnostics.Stopwatch]::StartNew()
     Push-Location (Split-Path -Parent $PSScriptRoot)
     try {
+        $env:BUILDKIT_PROGRESS = 'plain'
+        $env:COMPOSE_MENU = 'false'
+        $composeOutput = @('compose', '--ansi', 'never', '--progress', 'plain')
         $python = Join-Path $PWD '.venv/Scripts/python.exe'
         if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
             throw 'Create the project .venv with Python 3.12 or newer first.'
@@ -129,8 +133,8 @@ function Invoke-LocalVerification {
         if (-not (Test-Path -LiteralPath '.env')) {
             Copy-Item -LiteralPath '.env.example' -Destination '.env'
         }
-        Invoke-VerifyCommand 'Stop application services' docker @(
-            'compose', '--profile', 'runtime', 'stop', 'api', 'worker', 'scheduler'
+        Invoke-VerifyCommand 'Stop application services' docker (
+            $composeOutput + @('--profile', 'runtime', 'stop', 'api', 'worker', 'scheduler')
         )
         if (-not $SkipInstall) {
             Invoke-VerifyCommand 'Install project dependencies' $python @(
@@ -182,7 +186,7 @@ print('Verification key is valid')
             '-c', $verifyKey, $manifestPath, $tokenPath
         )
         $env:PYTASK_API_KEYS_SECRET_FILE = $manifestPath
-        $compose = @('compose', '-f', 'compose.yaml', '-f', 'compose.auth.yaml')
+        $compose = $composeOutput + @('-f', 'compose.yaml', '-f', 'compose.auth.yaml')
         $configuration = Invoke-VerifyCommand 'Read Compose configuration' docker (
             $compose + @('--profile', 'runtime', '--profile', 'tools', 'config', '--format', 'json')
         ) -CaptureOutput
@@ -215,13 +219,13 @@ print('Verification key is valid')
             '-m', 'pytask_service.cli', 'check-db'
         )
         Invoke-VerifyCommand 'Apply database migrations' docker (
-            $compose + @('--profile', 'tools', 'run', '--rm', 'migrate')
+            $compose + @('--profile', 'tools', 'run', '-T', '--rm', 'migrate')
         )
         Invoke-VerifyCommand 'Check database schema' docker (
-            $compose + @('--profile', 'tools', 'run', '--rm', 'ops', 'check')
+            $compose + @('--profile', 'tools', 'run', '-T', '--rm', 'ops', 'check')
         )
         Invoke-VerifyCommand 'Check migration drift' docker (
-            $compose + @('--profile', 'tools', 'run', '--rm', '--entrypoint', 'python',
+            $compose + @('--profile', 'tools', 'run', '-T', '--rm', '--entrypoint', 'python',
                 'migrate', '-m', 'alembic', '-c', '/app/alembic.ini', 'check')
         )
         Invoke-VerifyCommand 'Lint Python' $python @('-m', 'ruff', 'check', '.')

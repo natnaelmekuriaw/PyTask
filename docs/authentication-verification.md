@@ -27,6 +27,10 @@ An existing `PYTASK_DATABASE_URL` takes precedence for host checks and tests;
 use it only when it refers to the intended test database. Temporary environment
 changes are restored on exit.
 
+Docker progress uses plain text, ANSI formatting is disabled, and one-off
+containers run without a terminal. This supports Windows PowerShell sessions
+whose output handles cannot host Docker's interactive progress display.
+
 For repeat runs after dependencies and the image are already current:
 
 ```powershell
