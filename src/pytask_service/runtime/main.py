@@ -4,6 +4,7 @@ import sys
 from sqlalchemy.exc import SQLAlchemyError
 
 from pytask_service.config import Settings
+from pytask_service.db.diagnostics import postgres_state
 from pytask_service.runtime.paths import RuntimePaths
 from pytask_service.runtime.planning import plan_command
 from pytask_service.runtime.preflight import prepare_service
@@ -40,9 +41,12 @@ def main() -> int:
     except RuntimeFailure as error:
         print(f"Runtime check failed: {error}", file=sys.stderr)
         return 1
-    except SQLAlchemyError:
+    except SQLAlchemyError as error:
+        state = postgres_state(error)
+        suffix = f" (SQLSTATE {state})" if state is not None else ""
         print(
-            "Database preflight failed; check connection, permissions, and migrations",
+            f"Database preflight failed{suffix}; "
+            "check connection, permissions, and migrations",
             file=sys.stderr,
         )
         return 1
