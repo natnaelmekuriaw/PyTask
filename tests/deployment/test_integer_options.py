@@ -12,7 +12,19 @@ def test_supported_integer_values_are_read(
 
 
 @pytest.mark.parametrize(
-    "raw", ["", "-1", "+1", "1.0", "1e1", "true", "١", "11", "9" * 1000]
+    "raw",
+    ["", "-1", "+1", "1.0", "1e1", "true", "١", "11", "9" * 1000],
+    ids=[
+        "empty",
+        "negative",
+        "signed",
+        "float",
+        "exponent",
+        "boolean",
+        "unicode_digit",
+        "out_of_range",
+        "oversized",
+    ],
 )
 def test_integer_errors_never_echo_values(
     monkeypatch: pytest.MonkeyPatch, raw: str

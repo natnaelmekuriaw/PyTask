@@ -68,5 +68,6 @@ def test_database_error_codes_are_safe_and_actionable(
     monkeypatch.setattr(runtime, "prepare_service", fail)
     assert runtime.main() == 1
     assert capsys.readouterr().err == (
-        f"Database preflight failed{suffix}; check connection, permissions, and migrations\n"
+        f"Database preflight failed{suffix}; "
+        "check connection, permissions, and migrations\n"
     )
