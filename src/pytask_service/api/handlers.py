@@ -110,7 +110,9 @@ def register_errors(app: FastAPI) -> None:
             request_id=request.scope.get("pytask.request_id"),
         )
         request_id = request.scope.get("pytask.request_id")
-        headers = {"X-Request-ID": request_id} if request_id else None
+        headers = {"Cache-Control": "no-store", "Vary": "Authorization"}
+        if request_id:
+            headers["X-Request-ID"] = request_id
         return error_response(
             500, "internal_error", "An internal error occurred", headers=headers
         )
