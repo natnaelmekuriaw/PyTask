@@ -4,7 +4,9 @@ from fastapi.testclient import TestClient
 
 @pytest.mark.parametrize("attribute", ["auth_settings", "auth_store"])
 def test_unavailable_authentication_state_never_runs_handlers(
-    client: TestClient, headers: dict[str, str], attribute: str,
+    client: TestClient,
+    headers: dict[str, str],
+    attribute: str,
 ) -> None:
     value = getattr(client.app.state, attribute)
     delattr(client.app.state, attribute)
@@ -14,4 +16,3 @@ def test_unavailable_authentication_state_never_runs_handlers(
         assert response.json()["error"]["code"] == "authentication_unavailable"
     finally:
         setattr(client.app.state, attribute, value)
-

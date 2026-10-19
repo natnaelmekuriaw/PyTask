@@ -18,15 +18,19 @@ from tests.worker.conftest import isolated_engine as isolated_engine
 @pytest.fixture
 def make_client(isolated_engine: Engine) -> Iterator[ClientFactory]:
     with ExitStack() as stack:
-        def create(permissions: frozenset[Permission]) -> tuple[TestClient, dict[str, str]]:
+
+        def create(
+            permissions: frozenset[Permission],
+        ) -> tuple[TestClient, dict[str, str]]:
             issued = issue_key("integration", permissions)
             app = create_app(
                 Settings("postgresql+psycopg://u:p@localhost/db"),
-                engine=isolated_engine, registry=registry,
+                engine=isolated_engine,
+                registry=registry,
                 auth=AuthSettings(keys=(issued.credential,)),
             )
             return stack.enter_context(TestClient(app)), {
                 "Authorization": f"Bearer {issued.token}",
             }
-        yield create
 
+        yield create

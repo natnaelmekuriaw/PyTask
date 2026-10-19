@@ -10,4 +10,3 @@ def test_key_files_contain_separate_material(tmp_path: Path, key: IssuedKey) -> 
     assert token.read_text(encoding="utf-8").strip() == key.token
     assert key.token not in manifest.read_text(encoding="utf-8")
     assert read_manifest_file(manifest) == (key.credential,)
-

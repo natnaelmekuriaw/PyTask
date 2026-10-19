@@ -26,11 +26,17 @@ def test_an_unauthenticated_upload_is_not_read(key: IssuedKey) -> None:
             auth_settings=AuthSettings(keys=(key.credential,)),
             auth_store=KeyStore((key.credential,)),
         )
-        await AuthenticationMiddleware(downstream)({
-            "type": "http", "path": "/api/v1/tasks", "method": "POST",
-            "headers": [(b"content-length", b"999999999")],
-            "app": SimpleNamespace(state=state),
-        }, receive, send)
+        await AuthenticationMiddleware(downstream)(
+            {
+                "type": "http",
+                "path": "/api/v1/tasks",
+                "method": "POST",
+                "headers": [(b"content-length", b"999999999")],
+                "app": SimpleNamespace(state=state),
+            },
+            receive,
+            send,
+        )
         return sent
-    assert asyncio.run(request())[0]["status"] == 401
 
+    assert asyncio.run(request())[0]["status"] == 401

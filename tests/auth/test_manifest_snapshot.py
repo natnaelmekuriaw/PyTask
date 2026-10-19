@@ -11,7 +11,9 @@ from tests.api.conftest import OfflineEngine
 
 
 def test_running_api_uses_an_immutable_manifest_snapshot(
-    key: IssuedKey, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    key: IssuedKey,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     path = tmp_path / "keys.json"
     path.write_text(key.manifest(), encoding="utf-8")
@@ -19,7 +21,8 @@ def test_running_api_uses_an_immutable_manifest_snapshot(
     monkeypatch.setenv("PYTASK_API_DOCS_ENABLED", "true")
     app = create_app(
         Settings("postgresql+psycopg://u:p@localhost/db"),
-        engine=OfflineEngine(), registry=registry,
+        engine=OfflineEngine(),
+        registry=registry,
     )
     headers = {"Authorization": f"Bearer {key.token}"}
     with TestClient(app) as client:
@@ -29,4 +32,3 @@ def test_running_api_uses_an_immutable_manifest_snapshot(
     with pytest.raises(ValueError):
         with TestClient(app):
             pass
-

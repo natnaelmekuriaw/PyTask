@@ -20,4 +20,3 @@ def test_permissions_and_settings_are_immutable_validated_values() -> None:
         AuthSettings(mode="disabled")
     with pytest.raises(ValueError, match="settings"):
         AuthSettings(mode=AuthMode.DISABLED, docs_enabled=1)
-

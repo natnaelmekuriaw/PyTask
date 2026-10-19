@@ -7,7 +7,9 @@ from tests.observability.conftest import event_records as event_records
 
 
 def test_authentication_logs_never_include_credential_material(
-    client: TestClient, key: IssuedKey, headers: dict[str, str],
+    client: TestClient,
+    key: IssuedKey,
+    headers: dict[str, str],
     event_records: list[logging.LogRecord],
 ) -> None:
     client.get("/api/v1/tasks", headers={"Authorization": "Bearer private-bad-token"})
@@ -21,4 +23,3 @@ def test_authentication_logs_never_include_credential_material(
     requests = [record for record in event_records if record.msg == "http.request"]
     assert requests[-1].event_fields["credential_id"] == "test"
     assert requests[0].event_fields["credential_id"] is None
-

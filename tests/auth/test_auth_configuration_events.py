@@ -15,7 +15,9 @@ def test_disabled_mode_emits_an_explicit_startup_warning(
 ) -> None:
     app = create_app(
         Settings("postgresql+psycopg://u:p@localhost/db"),
-        engine=OfflineEngine(), registry=registry, auth=AuthSettings.disabled(),
+        engine=OfflineEngine(),
+        registry=registry,
+        auth=AuthSettings.disabled(),
     )
     with TestClient(app):
         pass

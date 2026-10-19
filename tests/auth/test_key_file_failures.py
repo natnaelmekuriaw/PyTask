@@ -7,7 +7,9 @@ from pytask_service.auth.issuance import IssuedKey
 
 
 def test_failed_manifest_write_rolls_back_new_token(
-    tmp_path: Path, key: IssuedKey, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    key: IssuedKey,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     token, manifest = tmp_path / "token.txt", tmp_path / "keys.json"
     original = files._write_new
@@ -23,4 +25,3 @@ def test_failed_manifest_write_rolls_back_new_token(
     assert "private-filesystem-diagnostic" not in str(error.value)
     assert not token.exists()
     assert not manifest.exists()
-
