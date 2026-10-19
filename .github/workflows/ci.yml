@@ -47,3 +47,26 @@ jobs:
           cache: pip
       - run: python -m pip install -c constraints/runtime.txt -e ".[dev]"
       - run: pytest -q -m "not integration"
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate service configuration
+        run: docker compose --profile runtime --profile tools config --quiet
+      - name: Build the runtime image
+        run: docker build --target runtime --tag pytask:ci .
+      - name: Check the image entry point
+        run: docker run --rm --read-only --tmpfs /tmp pytask:ci --help
+      - name: Check packaged migrations and runtime identity
+        run: |
+          docker run --rm -i --read-only --tmpfs /tmp --entrypoint python pytask:ci - <<'PY'
+          import os
+          from pathlib import Path
+          from pytask_service.runtime.paths import RuntimePaths
+          from pytask_service.runtime.schema import expected_heads
+          assert os.getuid() == 10001
+          assert Path('/app/LICENSE').is_file()
+          assert expected_heads(RuntimePaths.from_env())
+          print('image smoke checks passed')
+          PY
