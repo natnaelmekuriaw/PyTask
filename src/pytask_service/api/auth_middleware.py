@@ -1,5 +1,6 @@
 import logging
 
+from starlette._utils import get_route_path
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -24,7 +25,8 @@ class AuthenticationMiddleware:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        if scope["path"] in HEALTH_PATHS and scope["method"] in {"GET", "HEAD"}:
+        path = get_route_path(scope)
+        if path in HEALTH_PATHS and scope["method"] in {"GET", "HEAD"}:
             await self.app(scope, receive, send)
             return
 
@@ -59,9 +61,9 @@ class AuthenticationMiddleware:
                 return
         scope["pytask.principal"] = principal
         scope["pytask.credential_id"] = principal.key_id
-        if scope["path"] in DOC_PATHS:
+        if path in DOC_PATHS:
             if not settings.docs_enabled or (
-                settings.mode is AuthMode.REQUIRED and scope["path"] != "/openapi.json"
+                settings.mode is AuthMode.REQUIRED and path != "/openapi.json"
             ):
                 await error_response(404, "not_found", "Resource not found")(
                     scope, receive, protect
