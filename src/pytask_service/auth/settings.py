@@ -43,6 +43,8 @@ class AuthSettings:
                 "PYTASK_API_AUTH_MODE must be required or disabled"
             ) from None
         raw = read_secret("PYTASK_API_KEYS")
+        if mode is AuthMode.REQUIRED and not raw:
+            raise ValueError("PYTASK_API_KEYS or PYTASK_API_KEYS_FILE is required")
         if mode is AuthMode.DISABLED and raw:
             raise ValueError("Remove PYTASK_API_KEYS when authentication is disabled")
         keys = parse_manifest(raw) if raw else ()
