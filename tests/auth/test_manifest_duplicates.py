@@ -22,4 +22,3 @@ def test_duplicate_credential_identity_is_rejected(key: IssuedKey, field: str) -
     data["keys"].append(second)
     with pytest.raises(ValueError):
         parse_manifest(json.dumps(data))
-

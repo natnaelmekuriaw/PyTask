@@ -17,4 +17,3 @@ def test_manifest_contains_only_versioned_digest_records(key: IssuedKey) -> None
     data = json.loads(key.manifest())
     assert set(data) == {"version", "keys"}
     assert set(data["keys"][0]) == {"id", "sha256", "scopes"}
-

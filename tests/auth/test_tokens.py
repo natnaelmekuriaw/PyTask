@@ -16,4 +16,3 @@ def test_issuance_stores_only_a_digest_in_the_manifest() -> None:
     assert token_digest(issued.token) in issued.manifest()
     assert issued.token not in repr(issued)
     assert issued.credential.sha256 not in repr(issued.credential)
-

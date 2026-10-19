@@ -8,13 +8,19 @@ def test_liveness_does_not_require_or_validate_a_key(client: TestClient) -> None
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.parametrize(("method", "path"), [
-    ("GET", "/health/live/extra"), ("POST", "/health/live"),
-    ("GET", "/health/ready/extra"), ("GET", "/health"),
-    ("GET", "/health/live/"),
-])
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("GET", "/health/live/extra"),
+        ("POST", "/health/live"),
+        ("GET", "/health/ready/extra"),
+        ("GET", "/health"),
+        ("GET", "/health/live/"),
+    ],
+)
 def test_health_exemptions_are_exact_get_paths(
-    client: TestClient, method: str, path: str,
+    client: TestClient,
+    method: str,
+    path: str,
 ) -> None:
     assert client.request(method, path).status_code == 401
-

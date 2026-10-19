@@ -21,4 +21,3 @@ def test_removing_a_key_revokes_it_in_a_new_store() -> None:
     with pytest.raises(AuthenticationError):
         store.authenticate(old.token)
     assert store.authenticate(new.token).key_id == "new"
-

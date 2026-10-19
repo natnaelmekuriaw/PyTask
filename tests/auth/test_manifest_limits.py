@@ -20,4 +20,3 @@ def test_excess_key_records_are_rejected_before_validation(key: IssuedKey) -> No
 def test_deeply_nested_json_produces_a_safe_configuration_error() -> None:
     with pytest.raises(ValueError, match="key manifest"):
         parse_manifest("[" * 1100 + "]" * 1100)
-

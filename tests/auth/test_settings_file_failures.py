@@ -7,7 +7,9 @@ from pytask_service.auth.settings import AuthSettings
 
 @pytest.mark.parametrize("content", [b"", b"\xff", b"x" * 8193, b"not-json-secret"])
 def test_invalid_manifest_files_fail_safely(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, content: bytes,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    content: bytes,
 ) -> None:
     manifest = tmp_path / "private-manifest.json"
     manifest.write_bytes(content)
@@ -19,9 +21,9 @@ def test_invalid_manifest_files_fail_safely(
 
 
 def test_missing_manifest_file_is_not_treated_as_disabled(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("PYTASK_API_KEYS_FILE", str(tmp_path / "missing"))
     with pytest.raises(ValueError, match="PYTASK_API_KEYS_FILE"):
         AuthSettings.from_env()
-

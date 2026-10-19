@@ -7,7 +7,9 @@ from pytask_service.auth.settings import AuthSettings
 
 
 def test_utf8_bom_manifest_files_work_on_windows(
-    tmp_path: Path, key: IssuedKey, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    key: IssuedKey,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     manifest = tmp_path / "keys.json"
     manifest.write_text(key.manifest(), encoding="utf-8-sig")
@@ -16,11 +18,11 @@ def test_utf8_bom_manifest_files_work_on_windows(
 
 
 def test_manifest_sources_cannot_silently_override_each_other(
-    key: IssuedKey, monkeypatch: pytest.MonkeyPatch,
+    key: IssuedKey,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("PYTASK_API_KEYS", key.manifest())
     monkeypatch.setenv("PYTASK_API_KEYS_FILE", "private-path")
     with pytest.raises(ValueError, match="Set only one") as error:
         AuthSettings.from_env()
     assert "private-path" not in str(error.value)
-
