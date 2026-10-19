@@ -234,8 +234,6 @@ See the [definitions](docs/monitoring.md), [PowerShell examples](docs/monitoring
 [event reference](docs/operational-logs.md), [troubleshooting](docs/monitoring-troubleshooting.md),
 and [crash recovery demonstration](docs/monitoring-demo.md).
 
-## Milestones
-
 ## Container setup
 
 The [deployment guide](docs/deployment.md) builds one application image and

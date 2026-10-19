@@ -12,6 +12,9 @@ Configuration errors name the relevant environment variable. A registry
 failure happens before opening the database. A schema mismatch requires
 checking the image/database pair and running the explicit migration command.
 The restart policy allows three failure retries, rather than an endless loop.
+PostgreSQL query failures include a validated SQLSTATE code when the driver
+provides one. For example, 42703 identifies a missing column; diagnostics
+exclude query text and credentials.
 
 Check connectivity using the operator image:
 

@@ -40,6 +40,11 @@ suite with progress, duration reporting, and immediate failure:
 .\.venv\Scripts\pytest -x -vv --durations=10
 ```
 
+The [startup guide](deployment.md) contains the explicit PostgreSQL and
+migration commands if that database has not been prepared yet. Set
+`PYTASK_DATABASE_URL` in this PowerShell window; a Compose `.env` file does
+not configure host tests. Missing connection variables skip integration tests.
+
 The deployment integration checks cover unstamped, outdated, matching, and
 incomplete schemas. Tests that submit tasks use isolated schemas so normal
 deployment workers cannot claim their test tasks.

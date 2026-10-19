@@ -44,5 +44,5 @@ alternatives. Host environment URL values are not copied into the container.
 Changing PostgreSQL's initialization password file does not change a password
 already stored in an existing database volume. Rotate the database credential
 through PostgreSQL administration, update the application URL file, and
-restart affected services together. Do not remove the data volume to rotate
+recreate affected services together. Do not remove the data volume to rotate
 credentials. No automatic rotation or secret-file watching is implemented.
