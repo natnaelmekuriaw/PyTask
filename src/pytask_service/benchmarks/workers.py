@@ -66,7 +66,9 @@ class WorkerGroup:
             raise
 
     def ensure_alive(self) -> None:
-        if any(not process.is_alive() for process in self.processes):
+        if len(self.processes) != self.count or any(
+            not process.is_alive() for process in self.processes
+        ):
             raise BenchmarkFailure("worker_exited")
 
     def stop(self) -> bool:
