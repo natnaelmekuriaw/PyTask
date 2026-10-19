@@ -49,6 +49,7 @@ services:
       retries: 3
 
   postgres:
+    restart: "on-failure:3"
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pytask}
