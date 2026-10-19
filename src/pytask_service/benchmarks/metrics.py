@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pytask_service.benchmarks.distributions import Distribution, distribution
 from pytask_service.benchmarks.errors import BenchmarkFailure
@@ -30,7 +30,7 @@ def interval(start: datetime | None, end: datetime | None) -> float:
         or end.utcoffset() is None
     ):
         raise BenchmarkFailure("missing_timestamps")
-    value = (end - start).total_seconds()
+    value = (end.astimezone(UTC) - start.astimezone(UTC)).total_seconds()
     if value < 0 or not math.isfinite(value):
         raise BenchmarkFailure("invalid_timestamps")
     return value
@@ -38,7 +38,9 @@ def interval(start: datetime | None, end: datetime | None) -> float:
 
 def measure(observation: Observation, elapsed: float, submission: float) -> CaseMetrics:
     if (
-        not math.isfinite(elapsed)
+        type(elapsed) not in (int, float)
+        or type(submission) not in (int, float)
+        or not math.isfinite(elapsed)
         or not math.isfinite(submission)
         or elapsed <= 0
         or submission <= 0
