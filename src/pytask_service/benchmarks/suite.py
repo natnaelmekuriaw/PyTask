@@ -35,9 +35,10 @@ def run_suite(
     revision, dirty = source_revision()
     environment = replace(host_environment(), revision=revision, tracked_changes=dirty)
     report = BenchmarkReport(options, environment, datetime.now(UTC).isoformat())
-    engine = build_engine(settings)
+    engine = None
     results: list[CaseResult] = []
     try:
+        engine = build_engine(settings)
         with engine.connect() as connection:
             version = connection.scalar(text("SHOW server_version"))
         report = replace(
@@ -94,4 +95,5 @@ def run_suite(
     except Exception as error:
         return replace(report, results=tuple(results), error_code=failure_code(error))
     finally:
-        engine.dispose()
+        if engine is not None:
+            engine.dispose()
