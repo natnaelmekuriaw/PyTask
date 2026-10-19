@@ -30,8 +30,8 @@ def parser() -> argparse.ArgumentParser:
     command.add_argument(
         "--workloads",
         nargs="+",
-        choices=list(Workload),
-        default=list(Workload),
+        choices=[workload.value for workload in Workload],
+        default=[workload.value for workload in Workload],
         help="registered synthetic workloads",
     )
     command.add_argument(
