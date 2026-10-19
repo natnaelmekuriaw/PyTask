@@ -19,7 +19,7 @@ increasing `PYTASK_API_GRACEFUL_SECONDS`.
 Stop application processes while retaining PostgreSQL:
 
 ```powershell
-docker compose --profile runtime stop api worker scheduler
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime stop api worker scheduler
 ```
 
 A stop can legitimately wait for a running task. After the grace period,
