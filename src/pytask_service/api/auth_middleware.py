@@ -58,7 +58,9 @@ class AuthenticationMiddleware:
         scope["pytask.principal"] = principal
         scope["pytask.credential_id"] = principal.key_id
         if scope["path"] in DOC_PATHS:
-            if not settings.docs_enabled:
+            if not settings.docs_enabled or (
+                settings.mode is AuthMode.REQUIRED and scope["path"] != "/openapi.json"
+            ):
                 await error_response(404, "not_found", "Resource not found")(
                     scope, receive, protect
                 )
