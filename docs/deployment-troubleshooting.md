@@ -5,7 +5,7 @@
 Read the service logs:
 
 ```powershell
-docker compose --profile runtime logs --tail 100 api worker scheduler
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime logs --tail 100 api worker scheduler
 ```
 
 Configuration errors name the relevant environment variable. A registry
@@ -19,13 +19,13 @@ exclude query text and credentials.
 Check connectivity using the operator image:
 
 ```powershell
-docker compose --profile tools run --rm ops cli check-db
+docker compose -f compose.yaml -f compose.auth.yaml --profile tools run --rm ops cli check-db
 ```
 
 Check schema compatibility:
 
 ```powershell
-docker compose --profile tools run --rm ops check
+docker compose -f compose.yaml -f compose.auth.yaml --profile tools run --rm ops check
 ```
 
 ## The host CLI works but containers cannot connect
@@ -61,7 +61,7 @@ A restart alone does not apply a changed Compose environment. Recreate the
 affected containers after reviewing the new configuration:
 
 ```powershell
-docker compose --profile runtime up -d --no-build --force-recreate
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime up -d --no-build --force-recreate
 ```
 
 Allow the configured worker stop grace period. Updating a password file for
