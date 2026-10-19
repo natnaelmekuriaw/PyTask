@@ -1,7 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Query, Response, Security
 
+from pytask_service.api.auth_dependencies import access
 from pytask_service.api.dependencies import SessionDep
 from pytask_service.api.schemas.stats import MonitoringRead
 from pytask_service.observability.service import read_snapshot
@@ -15,7 +16,9 @@ from pytask_service.observability.window import (
 router = APIRouter(prefix="/monitoring", tags=["Monitoring"])
 
 
-@router.get("", response_model=MonitoringRead, summary="Read operational statistics")
+@router.get("", response_model=MonitoringRead, summary="Read operational statistics",
+            dependencies=[Security(access, scopes=["monitoring:read"])],
+            openapi_extra={"x-required-scopes": ["monitoring:read"]})
 def monitoring(
     session: SessionDep,
     response: Response,
