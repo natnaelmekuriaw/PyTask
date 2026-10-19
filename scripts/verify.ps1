@@ -9,7 +9,19 @@ param(
     [ValidateRange(5, 600)]
     [int]$TaskTimeoutSeconds = 60,
     [switch]$SkipInstall,
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$Benchmarks,
+    [ValidateRange(1, 10000)]
+    [int]$BenchmarkTasks = 20,
+    [ValidateRange(1, 32)]
+    [int[]]$BenchmarkWorkers = @(1, 2, 4),
+    [ValidateRange(1, 10)]
+    [int]$BenchmarkRepeat = 3,
+    [ValidateRange(0, 1000)]
+    [int]$BenchmarkWarmup = 2,
+    [ValidateRange(5, 3600)]
+    [int]$BenchmarkTimeoutSeconds = 120,
+    [string]$BenchmarkOutput = 'benchmark-results'
 )
 
 function Invoke-VerifyCommand {
@@ -97,7 +109,14 @@ function Invoke-LocalVerification {
         [int]$StartupTimeoutSeconds = 120,
         [int]$TaskTimeoutSeconds = 60,
         [switch]$SkipInstall,
-        [switch]$SkipBuild
+        [switch]$SkipBuild,
+        [switch]$Benchmarks,
+        [int]$BenchmarkTasks = 20,
+        [int[]]$BenchmarkWorkers = @(1, 2, 4),
+        [int]$BenchmarkRepeat = 3,
+        [int]$BenchmarkWarmup = 2,
+        [int]$BenchmarkTimeoutSeconds = 120,
+        [string]$BenchmarkOutput = 'benchmark-results'
     )
 
     Set-StrictMode -Version Latest
@@ -234,6 +253,16 @@ print('Verification key is valid')
         Invoke-VerifyCommand 'Run the full test suite' $python @(
             '-m', 'pytest', '-x', '-vv', '--durations=10'
         )
+        if ($Benchmarks) {
+            $workerCounts = @($BenchmarkWorkers | ForEach-Object { [string]$_ })
+            $benchmarkArguments = @(
+                '-m', 'pytask_service.benchmarks', '--tasks', "$BenchmarkTasks", '--workers'
+            ) + $workerCounts + @(
+                '--repeat', "$BenchmarkRepeat", '--warmup', "$BenchmarkWarmup",
+                '--case-timeout', "$BenchmarkTimeoutSeconds", '--output', $BenchmarkOutput
+            )
+            Invoke-VerifyCommand 'Run task engine benchmarks' $python $benchmarkArguments
+        }
         Invoke-VerifyCommand 'Start and wait for application services' docker (
             $compose + @('--profile', 'runtime', 'up', '-d', '--no-build',
                 '--wait', '--wait-timeout', "$StartupTimeoutSeconds")
@@ -302,6 +331,13 @@ if ($MyInvocation.InvocationName -ne '.') {
             TaskTimeoutSeconds = $TaskTimeoutSeconds
             SkipInstall = $SkipInstall
             SkipBuild = $SkipBuild
+            Benchmarks = $Benchmarks
+            BenchmarkTasks = $BenchmarkTasks
+            BenchmarkWorkers = $BenchmarkWorkers
+            BenchmarkRepeat = $BenchmarkRepeat
+            BenchmarkWarmup = $BenchmarkWarmup
+            BenchmarkTimeoutSeconds = $BenchmarkTimeoutSeconds
+            BenchmarkOutput = $BenchmarkOutput
         }
         Invoke-LocalVerification @options
         exit 0
