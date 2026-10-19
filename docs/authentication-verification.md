@@ -1,5 +1,50 @@
 # Authentication acceptance checks
 
+## Run everything with one command
+
+Start Docker Desktop with Linux containers, stop any host API, worker, or
+scheduler processes, and run this from the repository root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1
+```
+
+The execution policy option applies only to that PowerShell process. The
+runner installs dependencies, reuses or creates local keys, builds the image,
+starts PostgreSQL, applies migrations, runs all checks and the full suite,
+starts application services, and verifies readiness, anonymous rejection,
+example execution, and authenticated monitoring. Steps print progress and stop
+at the first failure. Services remain available for inspection after a failure
+or running after success; database changes are not rolled back by the runner.
+
+Existing `.env` and key files are preserved. If only one key file exists, the
+runner stops. Existing keys must match and grant `tasks:read`, `tasks:submit`,
+and `monitoring:read`. Keys are never printed. Keep `.secrets/` private.
+
+The runner targets `compose.yaml` plus `compose.auth.yaml`. It reads published
+ports and local database credentials from the resolved Compose configuration.
+An existing `PYTASK_DATABASE_URL` takes precedence for host checks and tests;
+use it only when it refers to the intended test database. Temporary environment
+changes are restored on exit.
+
+Docker progress uses plain text, ANSI formatting is disabled, and one-off
+containers run without a terminal. This supports Windows PowerShell sessions
+whose output handles cannot host Docker's interactive progress display.
+
+For repeat runs after dependencies and the image are already current:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -SkipInstall -SkipBuild
+```
+
+Optional `-ManifestFile` and `-TokenFile` select existing key files.
+`-StartupTimeoutSeconds` defaults to 120; `-TaskTimeoutSeconds` defaults to 60
+and can be increased for a busy local queue. The default run always executes
+the full test suite. Container health waiting uses
+[Compose's wait options](https://docs.docker.com/reference/cli/docker/compose/up/).
+
+## Manual checks
+
 Run each block separately in PowerShell from the repository root. Use Docker
 Desktop's Linux containers. Stop existing API, worker, and scheduler processes
 before the final tests. A failure stops the sequence.
