@@ -11,6 +11,7 @@
 !migrations/
 !migrations/**
 **/__pycache__/
+**/*.egg-info/
 **/*.pyc
 **/*.pyo
 **/.env*
