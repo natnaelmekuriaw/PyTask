@@ -18,11 +18,11 @@ stored data. Use the exact image intended for the application services.
 Run one migration operator at a time.
 
 ```powershell
-docker compose --profile runtime stop api worker scheduler
+docker compose -f compose.yaml -f compose.auth.yaml --profile runtime stop api worker scheduler
 ```
 
 ```powershell
-docker compose --profile tools run --rm migrate
+docker compose -f compose.yaml -f compose.auth.yaml --profile tools run --rm migrate
 ```
 
 The migration service executes `python -m alembic -c /app/alembic.ini upgrade head`.
@@ -31,13 +31,13 @@ It does not import the task registry. Its restart policy is disabled.
 Check the resulting image/schema combination:
 
 ```powershell
-docker compose --profile tools run --rm ops check
+docker compose -f compose.yaml -f compose.auth.yaml --profile tools run --rm ops check
 ```
 
 For a model comparison, invoke Alembic explicitly in the migration image:
 
 ```powershell
-docker compose --profile tools run --rm --entrypoint python migrate -m alembic -c /app/alembic.ini check
+docker compose -f compose.yaml -f compose.auth.yaml --profile tools run --rm --entrypoint python migrate -m alembic -c /app/alembic.ini check
 ```
 
 After successful checks, start the application using the built image. If
