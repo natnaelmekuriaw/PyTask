@@ -13,6 +13,8 @@ EVENT_FIELDS = frozenset(
         "worker_id",
         "schedule_id",
         "request_id",
+        "credential_id",
+        "auth_reason",
         "status",
         "count",
         "duration_seconds",
